@@ -22,6 +22,9 @@ func (m *CorsMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *err
 			WithHeader("Access-Control-Allow-Credentials", "true").
 			WithHeader("Access-Control-Allow-Headers", "*").
 			Empty()
+		return nil
 	}
+
+	handlerContext.Response().WithHeader("Access-Control-Allow-Origin", m.env.GetOrigin())
 	return nil
 }
