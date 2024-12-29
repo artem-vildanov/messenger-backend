@@ -97,15 +97,13 @@ func (c *UserDbModelCollection) FromDb(rows pgx.Rows) *errors.Error {
 		if err := model.FromDb(rows); err != nil {
 			return err.BuildError()
 		}
-		log.Printf("user from db: %v", model)
 		*c = append(*c, model)
 	}
-	log.Printf("users collection: %v", c)
 	return nil
 }
 
 func (c UserDbModelCollection) ToResponse() []map[string]any {
-	response := make([]map[string]any, len(c))
+	response := make([]map[string]any, 0, len(c))
 	for _, model := range c {
 		response = append(response, model.ToResponse())
 	}
