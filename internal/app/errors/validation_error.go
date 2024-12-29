@@ -33,5 +33,6 @@ func (v *ValidationError) BuildError() *Error {
 	if v.field != nil {
 		v.WithVerbose(fmt.Sprintf("in field: [%s]", *v.field))
 	}
+	v.message = errorMessage(v.verbose)
 	return v.Error
 }

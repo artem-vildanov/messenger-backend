@@ -2,6 +2,11 @@ package errors
 
 import "fmt"
 
+const (
+	sessionExpired errorMessage = "session expired"
+	sessionNotFound errorMessage = "session not found"
+)
+
 type SessionError struct {
 	*Error
 	errorReason string
@@ -57,12 +62,16 @@ func FailedToDeleteSession() *SessionError {
 
 func SessionNotFoundError() *SessionError {
 	return &SessionError{
-		Error: ForbiddenError().WithVerbose("session not found"),
+		Error: ForbiddenError().
+		 	WithMessage(sessionNotFound).
+			WithVerbose(string(sessionNotFound)),
 	}
 }
 
 func SessionExpiredError() *SessionError {
 	return &SessionError{
-		Error: ForbiddenError().WithVerbose("session expired"),
+		Error: ForbiddenError().
+			WithMessage(sessionExpired).
+			WithVerbose(string(sessionExpired)),
 	}
 }

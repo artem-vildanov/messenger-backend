@@ -38,6 +38,11 @@ func (e *Error) WithVerbose(verbose string) *Error {
 	return e
 }
 
+func (e *Error) WithMessage(message errorMessage) *Error {
+	e.message = message
+	return e
+}
+
 func BadRequestError() *Error {
 	return &Error{
 		http.StatusBadRequest,

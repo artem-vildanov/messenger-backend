@@ -9,6 +9,11 @@ import (
 
 const uniqueConstraintViolation = "23505"
 
+const (
+	userAlreadyExists errorMessage = "user already exists"
+	userNotFound errorMessage = "user not found"
+)
+
 type UserError struct {
 	*Error
 	errorReason string
@@ -46,13 +51,17 @@ func (u *UserError) BuildError() *Error {
 
 func UserAlreadyExistsError() *UserError {
 	return &UserError{
-		Error: BadRequestError().WithVerbose("user already exists"),
+		Error: BadRequestError().
+			WithMessage(userAlreadyExists).
+			WithVerbose("user already exists"),
 	}
 }
 
 func UserDoesntExistsError() *UserError {
 	return &UserError{
-		Error: BadRequestError().WithVerbose("user doesnt exist"),
+		Error: BadRequestError().
+		 	WithMessage(userNotFound).
+			WithVerbose("user doesnt exist"),
 	}
 }
 
