@@ -28,6 +28,10 @@ func (m *AuthMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *err
 	}
 
 	if err := session.CheckExpired(); err != nil {
+		if err := m.authRepo.DeleteSession(requestContext, session.ID); err != nil {
+			return err
+		}
+
 		return err.WithId(session.ID).
 			WithUserId(session.UserId).
 			BuildError()
