@@ -27,6 +27,12 @@ func (m *AuthMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *err
 		return err
 	}
 
+	if err := session.CheckExpired(); err != nil {
+		return err.WithId(session.ID).
+			WithUserId(session.UserId).
+			BuildError()
+	}
+
 	requestContext = context.WithValue(
 		requestContext,
 		ctx.ContextKey(ctx.SessionKey),

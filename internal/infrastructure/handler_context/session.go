@@ -14,7 +14,7 @@ const SessionKey string = "session"
 
 type Session struct {
 	ID        string
-	ExpiredAt string
+	ExpiredAt time.Time
 	UserId    int
 }
 
@@ -24,7 +24,7 @@ func NewSession(userId int, sessionTTL int) *Session {
 		UserId: userId,
 		ExpiredAt: time.Now().Add(
 			time.Duration(sessionTTL) * time.Minute,
-		).Format(time.RFC3339),
+		),
 	}
 }
 
@@ -38,6 +38,13 @@ func (m *Session) FromDb(row pgx.Row) *errors.SessionError {
 			return errors.SessionNotFoundError()
 		}
 		return errors.FailedToFindSession().WithReason(err.Error())
+	}
+	return nil
+}
+
+func (m *Session) CheckExpired() *errors.SessionError {
+	if m.ExpiredAt.Before(time.Now()) {
+		return errors.SessionExpiredError()
 	}
 	return nil
 }
