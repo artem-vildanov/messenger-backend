@@ -32,7 +32,7 @@ func (r *ResponseBuilder) WithHeader(key string, value string) *ResponseBuilder 
 func (r *ResponseBuilder) WithCookie(sessionId string) *ResponseBuilder {
 	r.responseWriter.Header().Set(
 		"Set-Cookie",
-		fmt.Sprintf("sessionId=%s; HttpOnly; Path=/; SameSite=None", sessionId),
+		fmt.Sprintf("sessionId=%s; HttpOnly; Path=/; SameSite=Lax", sessionId),
 	)
 	return r
 }
