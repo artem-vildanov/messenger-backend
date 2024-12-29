@@ -15,16 +15,16 @@ func (m *CorsMiddleware) Construct(env *config.Env) {
 }
 
 func (m *CorsMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *errors.Error {
+	builder := handlerContext.Response().
+		WithHeader("Access-Control-Allow-Origin", m.env.GetOrigin()).
+		WithHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS").
+		WithHeader("Access-Control-Allow-Credentials", "true").
+		WithHeader("Access-Control-Allow-Headers", "*")
+
 	if handlerContext.Request.Method == "OPTIONS" {
-		handlerContext.Response().
-			WithHeader("Access-Control-Allow-Origin", m.env.GetOrigin()).
-			WithHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS").
-			WithHeader("Access-Control-Allow-Credentials", "true").
-			WithHeader("Access-Control-Allow-Headers", "*").
-			Empty()
+		builder.Empty()
 		return nil
 	}
 
-	handlerContext.Response().WithHeader("Access-Control-Allow-Origin", m.env.GetOrigin())
 	return nil
 }
