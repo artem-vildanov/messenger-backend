@@ -102,7 +102,7 @@ func (r *UserRepositoryImpl) GetAll(ctx context.Context) (models.UserDbModelColl
 	models := make(models.UserDbModelCollection, 0)
 	rows, err := r.query(ctx, sql)
 	if err != nil {
-		// todo implement
+		return nil, errors.FailedToFindUserError().BuildError()
 	}
 	
 	if err := models.FromDb(rows); err != nil {
