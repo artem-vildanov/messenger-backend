@@ -3,15 +3,15 @@ package middlewares
 import (
 	"context"
 	"messenger/internal/app/errors"
-	"messenger/internal/app/handlers/ctx"
 	"messenger/internal/app/repository"
+	ctx "messenger/internal/infrastructure/handler_context"
 )
 
 type AuthMiddleware struct {
-	authRepo repo.AuthRepository
+	authRepo repository.SessionRepository
 }
 
-func (m *AuthMiddleware) Construct(authRepo repo.AuthRepository) {
+func (m *AuthMiddleware) Construct(authRepo repository.SessionRepository) {
 	m.authRepo = authRepo
 }
 

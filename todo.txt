@@ -1,0 +1,17 @@
+chat table: (multiple users in chat) 
+    chatType - chat_with_user | group_chat
+    chatId - serial
+    chatName - string | null
+
+chat table: (only for pairs)
+    id - serial
+    firstUserId
+    secondUserId
+
+message: 
+    id - serial
+    userId
+    text
+    created_at
+
+

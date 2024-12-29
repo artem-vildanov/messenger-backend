@@ -3,8 +3,8 @@ package models
 import (
 	"log"
 	"messenger/internal/app/errors"
-	"messenger/internal/app/handlers/ctx"
-	"messenger/internal/app/models/validator"
+	"messenger/internal/infrastructure/validators"
+	ctx "messenger/internal/infrastructure/handler_context"
 
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -15,29 +15,31 @@ type AuthReqModel struct {
 	Password string
 }
 
-func NewAuthReqModel(body ctx.RequestBody) (*AuthReqModel, *errors.Error) {
-	model := &AuthReqModel{
-		body["username"].(string),
-		body["password"].(string),
+func (m *AuthReqModel) FromRequest(body ctx.RequestBody) *errors.Error {
+	err := new(errors.Error)
+
+	if m.Username, err = body.GetString("username"); err != nil {
+		return err
+	}
+	if m.Password, err = body.GetString("password"); err != nil {
+		return err
 	}
 
-	if err := validator.
-		String(model.Username).
+	if err := validators.String(m.Username).
 		MaxLen(50).
 		MinLen(3).
 		Validate(); err != nil {
-		return nil, err.WithFieldName("username").BuildError()
+		return err.WithFieldName("username").BuildError()
 	}
 
-	if err := validator.
-		String(model.Password).
+	if err := validators.String(m.Password).
 		MaxLen(50).
 		MinLen(3).
 		Validate(); err != nil {
-		return nil, err.WithFieldName("password").BuildError()
+		return err.WithFieldName("password").BuildError()
 	}
 
-	return model, nil
+	return nil
 }
 
 func (a *AuthReqModel) HashPassword() *errors.Error {
@@ -85,4 +87,25 @@ func (m *UserDbModel) ToResponse() map[string]any {
 		"id":       m.ID,
 		"username": m.Username,
 	}
+}
+
+type UserDbModelCollection []*UserDbModel
+
+func (c *UserDbModelCollection) FromDb(rows pgx.Rows) *errors.Error {
+	for rows.Next() {
+		model := new(UserDbModel)
+		if err := model.FromDb(rows); err != nil {
+			return err.BuildError()
+		}
+		*c = append(*c, model)
+	}
+	return nil
+}
+
+func (c UserDbModelCollection) ToResponse() []map[string]any {
+	response := make([]map[string]any, len(c))
+	for _, model := range c {
+		response = append(response, model.ToResponse())
+	}
+	return response
 }

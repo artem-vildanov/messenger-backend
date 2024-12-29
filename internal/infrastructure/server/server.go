@@ -2,6 +2,7 @@ package server
 
 import (
 	"log"
+	"messenger/internal/app/middlewares"
 	"messenger/internal/app/routes"
 	"messenger/internal/infrastructure/clients"
 	"messenger/internal/infrastructure/config"
@@ -37,6 +38,8 @@ func (s *Server) initRouter() {
 	router.RootGroup().WithGroups(
 		routes.Api(s.di),
 		routes.Ws(s.di),
+	).WithMiddlewares(
+		di.Provide[middlewares.CorsMiddleware](s.di),
 	).BuildRouter(s.router)
 }
 

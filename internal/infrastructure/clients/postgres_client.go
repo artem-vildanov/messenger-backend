@@ -16,7 +16,6 @@ type PostgresClient struct {
 }
 
 func (d *PostgresClient) Construct(env *config.Env) {
-	return 
 	var err error
 
 	d.connection, err = pg.New(context.Background(), env.GetPostgresAddr().String())

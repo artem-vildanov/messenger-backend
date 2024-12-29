@@ -3,17 +3,11 @@ package router
 import (
 	"log"
 	"messenger/internal/app/errors"
-	"messenger/internal/app/handlers/ctx"
-	"messenger/internal/app/middlewares"
+	ctx "messenger/internal/infrastructure/handler_context"
 	"net/http"
 )
 
 type HandlerFunction func(*ctx.HandlerContext) *errors.Error
-
-/**
-func (handler HandlerFunction) Handle(handlerContext *ctx.HandlerContext) *errors.Error {
-	return handler(handlerContext)
-}
 
 func (handler HandlerFunction) ToHttpHandler() http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request)  {
@@ -28,58 +22,30 @@ func (handler HandlerFunction) ToHttpHandler() http.Handler {
 		}
 	})
 }
-*/
-
-func (handler HandlerFunction) HandleRequest(
-	responseWriter http.ResponseWriter,
-	request *http.Request,
-) *errors.Error {
-	context, err := ctx.NewHandlerContext(responseWriter, request)
-	if err != nil {
-		context.ErrorResponse(err)
-		return err
-	}
-
-	if err := handler(context); err != nil {
-		log.Println(err.GetVerbose())
-		context.ErrorResponse(err)
-		return err
-	}
-
-	return nil
-}
 
 type route struct {
 	method  Method
 	path    string
-	handler http.Handler
+	handler HandlerFunction
 }
 
 func Route(method Method, path string, handler HandlerFunction) *route {
 	return &route{
 		method,
 		path,
-		http.HandlerFunc(
-			func(responseWriter http.ResponseWriter, request *http.Request) {
-				handler.HandleRequest(responseWriter, request)
-			},
-		),
+		handler,
 	}
 }
 
-func (r *route) Middleware(middlewares ...middlewares.Middleware) *route {
+func (r *route) Middleware(middlewares ...middleware) *route {
 	for _, middleware := range middlewares {
 		next := r.handler
-
-		r.handler = http.HandlerFunc(
-			func(responseWriter http.ResponseWriter, request *http.Request) {
-				if err := HandlerFunction(middleware.MiddlewareFunc).
-					HandleRequest(responseWriter, request); err != nil {
-					return
-				}
-				next.ServeHTTP(responseWriter, request)
-			},
-		)
+		r.handler = HandlerFunction(func(handlerContext *ctx.HandlerContext) *errors.Error {
+			if err := middleware.MiddlewareFunc(handlerContext); err != nil {
+				return err
+			}
+			return next(handlerContext)
+		})
 	}
 	return r
 }

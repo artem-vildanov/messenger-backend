@@ -3,7 +3,7 @@ package middlewares
 import (
 	"log"
 	"messenger/internal/app/errors"
-	"messenger/internal/app/handlers/ctx"
+	ctx "messenger/internal/infrastructure/handler_context"
 )
 
 type LoggingMiddleware struct {

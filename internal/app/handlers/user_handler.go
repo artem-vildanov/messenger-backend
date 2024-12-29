@@ -2,9 +2,8 @@ package handlers
 
 import (
 	"messenger/internal/app/errors"
-	"messenger/internal/app/handlers/ctx"
-	"messenger/internal/app/models"
 	repo "messenger/internal/app/repository"
+	ctx "messenger/internal/infrastructure/handler_context"
 )
 
 type UserHandler struct {
@@ -34,17 +33,26 @@ func (u *UserHandler) GetUserById(handlerContext *ctx.HandlerContext) *errors.Er
 
 func (u *UserHandler) GetMyUser(handlerContext *ctx.HandlerContext) *errors.Error {
 	requestContext := handlerContext.Request.Context()
-	session := new(models.SessionModel)
-	if err := session.FromContext(requestContext); err != nil {
-		return err
-	}
 
-	userDbModel, err := u.userRepo.GetById(requestContext, session.UserId)
+	userDbModel, err := u.userRepo.GetById(requestContext, handlerContext.Session.UserId)
 	if err != nil {
 		return err
 	}
 
 	return handlerContext.Response().
 		WithContent(userDbModel.ToResponse()).
+		Json()
+}
+
+func (u *UserHandler) GetAllUsers(handlerContext *ctx.HandlerContext) *errors.Error {
+	requestContext := handlerContext.Request.Context()
+
+	models, err := u.userRepo.GetAll(requestContext)
+	if err != nil {
+		return err
+	}
+
+	return handlerContext.Response().
+		WithContent(models.ToResponse()).
 		Json()
 }

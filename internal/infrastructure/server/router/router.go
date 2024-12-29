@@ -1,16 +1,20 @@
 package router
 
 import (
-	"messenger/internal/app/middlewares"
-
+	"messenger/internal/app/errors"
+	ctx "messenger/internal/infrastructure/handler_context"
 	"github.com/gorilla/mux"
 )
+
+type middleware interface {
+	MiddlewareFunc(*ctx.HandlerContext) *errors.Error
+}
 
 type RoutesGroup struct {
 	prefix string
 	routes []*route
 	routesGroups []*RoutesGroup
-	middlewares []middlewares.Middleware
+	middlewares []middleware
 }
 
 func RootGroup() *RoutesGroup {
@@ -22,7 +26,7 @@ func NewGroup(prefix string) *RoutesGroup {
 		prefix,
 		make([]*route, 0),
 		make([]*RoutesGroup, 0),
-		make([]middlewares.Middleware, 0),
+		make([]middleware, 0),
 	}
 }
 
@@ -36,7 +40,7 @@ func (b *RoutesGroup) WithGroups(builder... *RoutesGroup) *RoutesGroup {
 	return b
 }
 
-func (b *RoutesGroup) WithMiddlewares(middlewares... middlewares.Middleware) *RoutesGroup {
+func (b *RoutesGroup) WithMiddlewares(middlewares... middleware) *RoutesGroup {
 	b.middlewares = append(b.middlewares, middlewares...)
 	return b
 }
@@ -46,8 +50,8 @@ func (b *RoutesGroup) BuildRouter(headRouter *mux.Router) {
 	for _, route := range b.routes {
 		subrouter.Handle(
 			route.path, 
-			route.Middleware(b.middlewares...).handler,
-		).Methods(string(route.method))
+			route.Middleware(b.middlewares...).handler.ToHttpHandler(),
+		).Methods("OPTIONS", string(route.method))
 	}
 
 	if len(b.routesGroups) == 0 {

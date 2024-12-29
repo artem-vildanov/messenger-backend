@@ -1,15 +1,15 @@
 package routes
 
 import (
-	"messenger/internal/infrastructure/di"
 	"messenger/internal/app/handlers"
 	"messenger/internal/app/middlewares"
 	repo "messenger/internal/app/repository"
+	"messenger/internal/infrastructure/di"
 	"messenger/internal/infrastructure/server/router"
 )
 
 func Api(container *di.DependencyContainer) *router.RoutesGroup {
-	di.Bind[repo.AuthRepository, repo.AuthRepositoryImpl](container)
+	di.Bind[repo.SessionRepository, repo.SessionRepositoryImpl](container)
 	di.Bind[repo.UserRepository, repo.UserRepositoryImpl](container)
 
 	loggingMiddleware := di.Provide[middlewares.LoggingMiddleware](container)
@@ -31,6 +31,7 @@ func Api(container *di.DependencyContainer) *router.RoutesGroup {
 				WithMiddlewares(authMiddleware).
 				WithRoutes(
 					router.Route(router.Get, "/{userId:[0-9]+}", userHandler.GetUserById),
+					router.Route(router.Get, "/all", userHandler.GetAllUsers),
 				),
 		)
 }

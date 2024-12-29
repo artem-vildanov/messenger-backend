@@ -1,8 +1,13 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+const uniqueConstraintViolation = "23505"
 
 type UserError struct {
 	*Error
@@ -61,4 +66,20 @@ func FailedToCreateUserError() *UserError {
 	return &UserError{
 		Error: InternalError().WithVerbose("failed to create user"),
 	}
+}
+
+func HandleCreateUserError(err error) *UserError {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return FailedToCreateUserError().WithReason(err.Error())
+	}
+
+	if pgErr.Code != uniqueConstraintViolation {
+		return FailedToCreateUserError().WithReason(err.Error())
+	}
+
+	return UserAlreadyExistsError().
+		WithReason(
+			fmt.Sprintf("unique constraint violation on field: %s", pgErr.ConstraintName),
+		)
 }

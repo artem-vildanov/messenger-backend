@@ -22,6 +22,7 @@ type Env struct {
 	appHost string
 	appPort string
 
+	origin string
 	sessionTTL int // in minutes
 }
 
@@ -43,6 +44,7 @@ func (e *Env) Construct() {
 	e.appHost = os.Getenv("APP_HOST")
 	e.appPort = os.Getenv("APP_PORT")
 
+	e.origin = os.Getenv("ORIGIN")
 	e.sessionTTL, err = strconv.Atoi(os.Getenv("SESSION_TTL")) // in minutes
 	if err != nil {
 		log.Fatalf("Failed to convert SESSION_TTL to int: %s", err.Error())
@@ -91,4 +93,8 @@ func (e *Env) GetAppAddr() string {
 
 func (e *Env) GetSessionTTL() int {
 	return e.sessionTTL
+}
+
+func (e *Env) GetOrigin() string {
+	return e.origin 
 }
