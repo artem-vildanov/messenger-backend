@@ -64,7 +64,7 @@ func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
 	}
 
 	if err := loginModel.VerifyPassword(user.PasswordHash); err != nil {
-		return err
+		return err.WithName(loginModel.Username).BuildError()
 	}
 
 	session := ctx.NewSession(user.ID, h.env.GetSessionTTL())

@@ -52,12 +52,12 @@ func (a *AuthReqModel) HashPassword() *errors.Error {
 	return nil
 }
 
-func (a *AuthReqModel) VerifyPassword(passwordHash string) *errors.Error {
+func (a *AuthReqModel) VerifyPassword(passwordHash string) *errors.UserError {
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(passwordHash),
 		[]byte(a.Password),
 	); err != nil {
-		return errors.ForbiddenError().WithVerbose("wrong credentials")
+		return errors.WrongCredentials()
 	}
 	return nil
 }

@@ -12,6 +12,7 @@ const uniqueConstraintViolation = "23505"
 const (
 	userAlreadyExists errorMessage = "user already exists"
 	userNotFound errorMessage = "user not found"
+	wrongCredentials errorMessage = "wrong credentials"
 )
 
 type UserError struct {
@@ -53,7 +54,15 @@ func UserAlreadyExistsError() *UserError {
 	return &UserError{
 		Error: BadRequestError().
 			WithMessage(userAlreadyExists).
-			WithVerbose("user already exists"),
+			WithVerbose(string(userAlreadyExists)),
+	}
+}
+
+func WrongCredentials() *UserError {
+	return &UserError{
+		Error: ForbiddenError().
+			WithMessage(wrongCredentials).
+			WithVerbose(string(wrongCredentials)),
 	}
 }
 
@@ -61,7 +70,7 @@ func UserDoesntExistsError() *UserError {
 	return &UserError{
 		Error: BadRequestError().
 		 	WithMessage(userNotFound).
-			WithVerbose("user doesnt exist"),
+			WithVerbose(string(userNotFound)),
 	}
 }
 

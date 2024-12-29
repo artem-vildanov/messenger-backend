@@ -48,6 +48,10 @@ func (r *RequestBody) fromRequest(request *http.Request) *errors.Error {
 		return nil
 	}
 
+	if request.Method == "OPTIONS" {
+		return nil
+	}
+
 	defer request.Body.Close()
 	rawBody, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -71,7 +75,6 @@ func (c *HandlerContext) ErrorResponse(err *errors.Error) {
 
 func (c *HandlerContext) Response() *ResponseBuilder {
 	c.responseWriter.Header().Set("Content-Type", "application/json")
-	c.responseWriter.Header().Set("Access-Control-Allow-Origin", "*")
 	return &ResponseBuilder{
 		responseWriter: c.responseWriter,
 		code:           http.StatusOK,
