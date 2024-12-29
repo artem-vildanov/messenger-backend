@@ -14,8 +14,8 @@ const SessionKey string = "session"
 
 type Session struct {
 	ID        string
-	UserId    int
 	ExpiredAt string
+	UserId    int
 }
 
 func NewSession(userId int, sessionTTL int) *Session {
@@ -31,8 +31,8 @@ func NewSession(userId int, sessionTTL int) *Session {
 func (m *Session) FromDb(row pgx.Row) *errors.SessionError {
 	if err := row.Scan(
 		&m.ID,
-		&m.UserId,
 		&m.ExpiredAt,
+		&m.UserId,
 	); err != nil {
 		if pgx.ErrNoRows.Error() == err.Error() {
 			return errors.SessionNotFoundError()
