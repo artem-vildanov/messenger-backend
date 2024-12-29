@@ -19,7 +19,7 @@ func (m *CorsMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *err
 		WithHeader("Access-Control-Allow-Origin", m.env.GetOrigin()).
 		WithHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS").
 		WithHeader("Access-Control-Allow-Credentials", "true").
-		WithHeader("Access-Control-Allow-Headers", "*")
+		WithHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 
 	if handlerContext.Request.Method == "OPTIONS" {
 		builder.Empty()
