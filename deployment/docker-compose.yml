@@ -20,7 +20,7 @@ services:
         condition: on-failure
 
   messenger-service:
-    image: messenger-service
+    image: messenger-service:${IMAGE_TAG}
     deploy:
       replicas: 3
       restart_policy:

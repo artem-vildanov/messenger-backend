@@ -4,7 +4,7 @@ build-service:
 	@docker build -f ./deployment/service.Dockerfile -t messenger-service:$(TAG) .
 
 run: build-service
-	@docker stack deploy -c ./deployment/docker-compose.yml messenger-app
+	@IMAGE_TAG=$(TAG) docker stack deploy -c ./deployment/docker-compose.yml messenger-app
 
 update-service: build-service
 	@docker service update --image messenger-service:$(TAG) messenger-app_messenger-service
