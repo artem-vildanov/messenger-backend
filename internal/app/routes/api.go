@@ -12,14 +12,12 @@ func Api(container *di.DependencyContainer) *router.RoutesGroup {
 	di.Bind[repo.SessionRepository, repo.SessionRepositoryImpl](container)
 	di.Bind[repo.UserRepository, repo.UserRepositoryImpl](container)
 
-	loggingMiddleware := di.Provide[middlewares.LoggingMiddleware](container)
 	authMiddleware := di.Provide[middlewares.AuthMiddleware](container)
 
 	authHandler := di.Provide[handlers.AuthHandler](container)
 	userHandler := di.Provide[handlers.UserHandler](container)
 
 	return router.NewGroup("/api").
-		WithMiddlewares(loggingMiddleware).
 		WithGroups(
 			router.NewGroup("/auth").
 				WithRoutes(

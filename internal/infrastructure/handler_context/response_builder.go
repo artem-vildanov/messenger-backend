@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"messenger/internal/app/errors"
 	"net/http"
 )
 
@@ -37,38 +36,34 @@ func (r *ResponseBuilder) WithCookie(sessionId string) *ResponseBuilder {
 	return r
 }
 
-func (r *ResponseBuilder) Json() *errors.Error {
+func (r *ResponseBuilder) Json() {
 	r.responseWriter.Header().Set("Content-Type", "application/json")
 	r.content = map[string]interface{}{"message": r.content}
 	r.responseWriter.WriteHeader(r.code)
 	err := json.NewEncoder(r.responseWriter).Encode(r.content)
 	if err != nil {
 		log.Printf("Failed to parse into json with error: %s\n", err.Error())
-		return errors.InternalError()
 	}
-	return nil
 }
 
-func (r *ResponseBuilder) Empty() *errors.Error {
+func (r *ResponseBuilder) Empty() {
 	r.WithCode(http.StatusNoContent)
 	r.responseWriter.Header().Del("Content-Type")
 	r.responseWriter.WriteHeader(r.code)
 	if _, err := r.responseWriter.Write(nil); err != nil {
 		log.Printf("Failed to send empty response: %s\n", err.Error())
-		return errors.InternalError()
 	}
-	return nil
 }
 
-func (r *ResponseBuilder) HTML() *errors.Error {
-	return r.respondWithText("html")
+func (r *ResponseBuilder) HTML() {
+	r.respondWithText("html")
 }
 
-func (r *ResponseBuilder) TextPlain() *errors.Error {
-	return r.respondWithText("plain")
+func (r *ResponseBuilder) TextPlain() {
+	r.respondWithText("plain")
 }
 
-func (r *ResponseBuilder) respondWithText(textType string) *errors.Error {
+func (r *ResponseBuilder) respondWithText(textType string) {
 	contentType := fmt.Sprintf("text/%s", textType)
 	r.responseWriter.Header().Set(
 		"Content-Type",
@@ -81,16 +76,14 @@ func (r *ResponseBuilder) respondWithText(textType string) *errors.Error {
 
 	htmlContent, ok := r.content.(string)
 	if !ok {
-		return errors.InternalError().
-			WithVerbose(fmt.Sprintf("Invalid content type for %s\n", contentType))
+		log.Printf("Invalid content type for %s\n", contentType)
+		return
 	}
 
 	r.responseWriter.WriteHeader(r.code)
 	_, err := r.responseWriter.Write([]byte(htmlContent))
 	if err != nil {
-		return errors.InternalError().
-			WithVerbose(fmt.Sprintf("Error writing %s response: %s", contentType, err.Error()))
+		log.Printf("Error writing %s response: %s", contentType, err.Error())
+		return
 	}
-
-	return nil
 }

@@ -44,9 +44,11 @@ func (h *AuthHandler) Register(handlerContext *ctx.HandlerContext) *errors.Error
 		return err
 	}
 
-	return handlerContext.Response().
+	handlerContext.Response().
 		WithCookie(session.ID).
 		TextPlain()
+
+	return nil
 }
 
 func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
@@ -72,9 +74,11 @@ func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
 		return err
 	}
 
-	return handlerContext.Response().
+	handlerContext.Response().
 		WithCookie(session.ID).
 		TextPlain()
+
+	return nil
 }
 
 func (a *AuthHandler) Logout(handlerContext *ctx.HandlerContext) *errors.Error {
@@ -84,5 +88,7 @@ func (a *AuthHandler) Logout(handlerContext *ctx.HandlerContext) *errors.Error {
 		return err
 	}
 
-	return handlerContext.Response().Empty()
+	handlerContext.Response().Empty()
+
+	return nil
 }

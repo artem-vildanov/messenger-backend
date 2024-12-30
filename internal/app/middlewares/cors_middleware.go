@@ -4,6 +4,7 @@ import (
 	"messenger/internal/app/errors"
 	"messenger/internal/infrastructure/config"
 	ctx "messenger/internal/infrastructure/handler_context"
+	"messenger/internal/infrastructure/server/router"
 )
 
 type CorsMiddleware struct {
@@ -14,7 +15,10 @@ func (m *CorsMiddleware) Construct(env *config.Env) {
 	m.env = env
 }
 
-func (m *CorsMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *errors.Error {
+func (m *CorsMiddleware) MiddlewareFunc(
+	handlerContext *ctx.HandlerContext,
+	next router.HandlerFunction,
+) *errors.Error {
 	builder := handlerContext.Response().
 		WithHeader("Access-Control-Allow-Origin", m.env.GetOrigin()).
 		WithHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS").
@@ -26,5 +30,5 @@ func (m *CorsMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *err
 		return nil
 	}
 
-	return nil
+	return next(handlerContext)
 }

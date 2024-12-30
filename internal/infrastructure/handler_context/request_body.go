@@ -65,19 +65,3 @@ func (r *RequestBody) fromRequest(request *http.Request) *errors.Error {
 
 	return nil
 }
-
-func (c *HandlerContext) ErrorResponse(err *errors.Error) {
-	c.Response().
-		WithCode(err.GetCode()).
-		WithContent(err.Error()).
-		Json()
-}
-
-func (c *HandlerContext) Response() *ResponseBuilder {
-	c.responseWriter.Header().Set("Content-Type", "application/json")
-	return &ResponseBuilder{
-		responseWriter: c.responseWriter,
-		code:           http.StatusOK,
-		content:        "OK",
-	}
-}

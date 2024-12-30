@@ -10,7 +10,7 @@ import (
 type HandlerFunction func(*ctx.HandlerContext) *errors.Error
 
 func (handler HandlerFunction) ToHttpHandler() http.Handler {
-	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request)  {
+	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		context, err := ctx.NewHandlerContext(responseWriter, request)
 		if err != nil {
 			context.ErrorResponse(err)
@@ -41,10 +41,10 @@ func (r *route) Middleware(middlewares ...middleware) *route {
 	for _, middleware := range middlewares {
 		next := r.handler
 		r.handler = HandlerFunction(func(handlerContext *ctx.HandlerContext) *errors.Error {
-			if err := middleware.MiddlewareFunc(handlerContext); err != nil {
+			if err := middleware.MiddlewareFunc(handlerContext, next); err != nil {
 				return err
 			}
-			return next(handlerContext)
+			return nil
 		})
 	}
 	return r

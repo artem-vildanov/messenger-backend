@@ -40,6 +40,7 @@ func (s *Server) initRouter() {
 		routes.Ws(s.di),
 	).WithMiddlewares(
 		di.Provide[middlewares.CorsMiddleware](s.di),
+		di.Provide[middlewares.LoggingMiddleware](s.di),
 	).BuildRouter(s.router)
 }
 

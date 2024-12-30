@@ -5,6 +5,7 @@ import (
 	"messenger/internal/app/errors"
 	"messenger/internal/app/repository"
 	ctx "messenger/internal/infrastructure/handler_context"
+	"messenger/internal/infrastructure/server/router"
 )
 
 type AuthMiddleware struct {
@@ -15,7 +16,10 @@ func (m *AuthMiddleware) Construct(authRepo repository.SessionRepository) {
 	m.authRepo = authRepo
 }
 
-func (m *AuthMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *errors.Error {
+func (m *AuthMiddleware) MiddlewareFunc(
+	handlerContext *ctx.HandlerContext, 
+	next router.HandlerFunction,
+) *errors.Error {
 	requestContext := handlerContext.Request.Context()
 	sessionCookie, err := handlerContext.SessionCookie()
 	if err != nil {
@@ -44,5 +48,6 @@ func (m *AuthMiddleware) MiddlewareFunc(handlerContext *ctx.HandlerContext) *err
 	)
 
 	handlerContext.Request = handlerContext.Request.WithContext(requestContext)
-	return nil
+
+	return next(handlerContext)
 }

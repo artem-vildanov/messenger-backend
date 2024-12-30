@@ -26,9 +26,11 @@ func (u *UserHandler) GetUserById(handlerContext *ctx.HandlerContext) *errors.Er
 		return err
 	}
 
-	return handlerContext.Response().
+	handlerContext.Response().
 		WithContent(userDbModel.ToResponse()).
 		Json()
+
+	return nil
 }
 
 func (u *UserHandler) GetMyUser(handlerContext *ctx.HandlerContext) *errors.Error {
@@ -39,9 +41,11 @@ func (u *UserHandler) GetMyUser(handlerContext *ctx.HandlerContext) *errors.Erro
 		return err
 	}
 
-	return handlerContext.Response().
+	handlerContext.Response().
 		WithContent(userDbModel.ToResponse()).
 		Json()
+	
+	return nil
 }
 
 func (u *UserHandler) GetAllUsers(handlerContext *ctx.HandlerContext) *errors.Error {
@@ -52,7 +56,9 @@ func (u *UserHandler) GetAllUsers(handlerContext *ctx.HandlerContext) *errors.Er
 		return err
 	}
 
-	return handlerContext.Response().
+	handlerContext.Response().
 		WithContent(models.ToResponse()).
 		Json()
+	
+	return nil
 }

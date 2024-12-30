@@ -7,7 +7,7 @@ import (
 )
 
 type middleware interface {
-	MiddlewareFunc(*ctx.HandlerContext) *errors.Error
+	MiddlewareFunc(*ctx.HandlerContext, HandlerFunction) *errors.Error
 }
 
 type RoutesGroup struct {

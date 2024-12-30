@@ -52,4 +52,18 @@ func (c *HandlerContext) SessionCookie() (*http.Cookie, *errors.Error) {
 	return cookie, nil
 }
 
+func (c *HandlerContext) Response() *ResponseBuilder {
+	c.responseWriter.Header().Set("Content-Type", "application/json")
+	return &ResponseBuilder{
+		responseWriter: c.responseWriter,
+		code:           http.StatusOK,
+		content:        "OK",
+	}
+}
 
+func (c *HandlerContext) ErrorResponse(err *errors.Error) {
+	c.Response().
+		WithCode(err.GetCode()).
+		WithContent(err.Error()).
+		Json()
+}
