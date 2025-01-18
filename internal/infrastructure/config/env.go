@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -10,91 +9,45 @@ import (
 )
 
 type Env struct {
-	postgresPassword string
-	postgresUser     string
-	postgresHost     string
-	postgresPort     string
-	postgresDb       string
-
-	redisHost string
-	redisPort string
-
-	appHost string
-	appPort string
-
-	origin string
-	sessionTTL int // in minutes
+	PgPassword string
+	PgUser     string
+	PgHost     string
+	PgPort     string
+	PgDb       string
+	PgSSL      string
+	RedisHost  string
+	RedisPort  string
+	AppHost    string
+	AppPort    string
+	Origin     string
+	SessionTTL int // in minutes
 }
 
-func (e *Env) Construct() {
-	err := godotenv.Load("./config/.env")
+func LoadEnv() *Env {
+	e := &Env{}
+
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Failed to load .env: %v", err)
+		log.Panicf("Failed to load .env: %v", err)
 	}
 
-	e.postgresPassword = os.Getenv("POSTGRES_PASSWORD")
-	e.postgresUser = os.Getenv("POSTGRES_USER")
-	e.postgresHost = os.Getenv("POSTGRES_HOST")
-	e.postgresPort = os.Getenv("POSTGRES_PORT")
-	e.postgresDb = os.Getenv("POSTGRES_DB")
+	e.PgPassword = os.Getenv("PG_PASSWORD")
+	e.PgUser = os.Getenv("PG_USER")
+	e.PgHost = os.Getenv("PG_HOST")
+	e.PgPort = os.Getenv("PG_PORT")
+	e.PgDb = os.Getenv("PG_DB")
+	e.PgSSL = os.Getenv("PG_SSL")
 
-	e.redisHost = os.Getenv("REDIS_HOST")
-	e.redisPort = os.Getenv("REDIS_PORT")
+	e.RedisHost = os.Getenv("REDIS_HOST")
+	e.RedisPort = os.Getenv("REDIS_PORT")
 
-	e.appHost = os.Getenv("APP_HOST")
-	e.appPort = os.Getenv("APP_PORT")
+	e.AppHost = os.Getenv("APP_HOST")
+	e.AppPort = os.Getenv("APP_PORT")
 
-	e.origin = os.Getenv("ORIGIN")
-	e.sessionTTL, err = strconv.Atoi(os.Getenv("SESSION_TTL")) // in minutes
+	e.Origin = os.Getenv("ORIGIN")
+	e.SessionTTL, err = strconv.Atoi(os.Getenv("SESSION_TTL")) // in minutes
 	if err != nil {
-		log.Fatalf("Failed to convert SESSION_TTL to int: %s", err.Error())
+		log.Panicf("Failed to convert SESSION_TTL to int: %s", err.Error())
 	}
-}
-
-type PostgresAddr string
-
-func (e *Env) GetPostgresAddr() PostgresAddr {
-	return PostgresAddr(
-		fmt.Sprintf(
-			"postgres://%s:%s@%s:%s/%s",
-			e.postgresUser,
-			e.postgresPassword,
-			e.postgresHost,
-			e.postgresPort,
-			e.postgresDb,
-		),
-	)
-}
-
-func (a PostgresAddr) WithSllDisabled() PostgresAddr {
-	a += "?sslmode=disable"
-	return a
-}
-
-func (a PostgresAddr) String() string {
-	return string(a)
-}
-
-func (e *Env) GetRedisAddr() string {
-	return fmt.Sprintf(
-		"%s:%s", 
-		e.redisHost, 
-		e.redisPort,
-	)
-}
-
-func (e *Env) GetAppAddr() string {
-	return fmt.Sprintf(
-		"%s:%s", 
-		e.appHost, 
-		e.appPort,
-	)
-}
-
-func (e *Env) GetSessionTTL() int {
-	return e.sessionTTL
-}
-
-func (e *Env) GetOrigin() string {
-	return e.origin 
+	return e
 }

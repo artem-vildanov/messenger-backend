@@ -1,11 +1,13 @@
 package main
 
 import (
-	"messenger/internal/infrastructure/server"
+	"messenger/internal/presentation/routes"
+	"messenger/internal/bootstrap"
 )
 
 func main() {
-	srv := server.New()
-	defer srv.BeforeShutdown()
-	srv.Run()
+	app := bootstrap.NewApp()
+	defer app.Cleanup()
+	rootGroup := routes.BuildRootGroup(app)
+	app.Run(rootGroup)
 }

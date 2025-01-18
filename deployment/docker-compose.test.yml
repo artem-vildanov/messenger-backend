@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  messenger-service-test:
+    build:
+      context: ../
+      dockerfile: ./deployment/service-test.Dockerfile
+    networks:
+      - messenger-network-test
+    depends_on:
+      - messenger-redis-test
+      - messenger-postgres-test
+
+  messenger-redis-test:
+    image: redis:alpine
+    networks:
+      - messenger-network-test
+
+  messenger-postgres-test:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: test
+    volumes:
+      - messenger-postgres-data-test:/var/lib/postgresql/data
+    networks:
+      - messenger-network-test
+
+networks:
+  messenger-network-test:
+    driver: bridge
+    attachable: true
+
+volumes:
+  messenger-postgres-data-test:
