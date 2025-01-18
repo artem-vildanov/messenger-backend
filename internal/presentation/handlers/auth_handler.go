@@ -95,6 +95,11 @@ func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
 	return nil
 }
 
+
+
+
+
+
 func (a *AuthHandler) Logout(handlerContext *ctx.HandlerContext) *errors.Error {
 	if err := a.sessionDeleter.DeleteSession(
 		handlerContext.Request.Context(),
