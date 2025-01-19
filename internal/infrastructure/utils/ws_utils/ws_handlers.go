@@ -46,6 +46,9 @@ func WsHandlers(handlers ...WsHandler) router_utils.Handler {
 
 		select {
 		case err := <-errorChannel:
+			if appError.IsConnClosedErr(err) {
+				return nil
+			}
 			return err
 		default:
 			return nil

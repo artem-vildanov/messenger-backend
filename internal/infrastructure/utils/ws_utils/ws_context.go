@@ -3,10 +3,10 @@ package ws_utils
 import (
 	"context"
 	"errors"
-	"log"
 	appErrors "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/infrastructure/utils/mapping_utils"
+	"os"
 
 	"github.com/gorilla/websocket"
 )
@@ -33,20 +33,28 @@ func NewWsContext(
 
 // blocking operation
 func Read[T any](conn *websocket.Conn) (T, error) {
-	incoming := new(T)
-
-	_, msg, err := conn.ReadMessage()
-	if err != nil {
-		log.Println("failed to read: ", err.Error())
-		return *incoming, appErrors.ErrBadRequest
-	}
-
-	log.Println("success", string(msg))
-	return *incoming, appErrors.ErrBadRequest
+	var incoming T
 
 	if err := conn.ReadJSON(&incoming); err != nil {
-		log.Printf("failed to read from JSON: %s", err.Error())
-		return *incoming, appErrors.Wrap(
+		if websocket.IsCloseError(
+			err,
+			websocket.CloseNormalClosure,
+			websocket.CloseGoingAway,
+		) {
+			return incoming, appErrors.Wrap(
+				appErrors.WsConnClosed,
+				err,
+				errors.New("Read"),
+			)
+		}
+		if os.IsTimeout(err) {
+			return incoming, appErrors.Wrap(
+				appErrors.ErrTimeout,
+				err,
+				errors.New("Read"),
+			)
+		}
+		return incoming, appErrors.Wrap(
 			appErrors.ErrInternal,
 			err,
 			errors.New("Read"),
@@ -54,16 +62,15 @@ func Read[T any](conn *websocket.Conn) (T, error) {
 	}
 
 	if err := mapping_utils.ValidateRequestModel(incoming); err != nil {
-		return *incoming, err
+		return incoming, err
 	}
 
-	return *incoming, nil
+	return incoming, nil
 }
 
 // blocking operation
-func Write[T any](conn *websocket.Conn, outgoing T) error {
+func Write(conn *websocket.Conn, outgoing any) error {
 	if err := conn.WriteJSON(outgoing); err != nil {
-		log.Println("Write error json parse: ", err.Error())
 		return appErrors.Wrap(
 			appErrors.ErrInternal,
 			err,

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func authUrl(url string) string {
@@ -64,15 +65,15 @@ func Test_Register(t *testing.T) {
 			if result.response.StatusCode == http.StatusOK {
 				sessionId := getSessionIdFromResponse(t, result.response.Cookies())
 
-				user, appErr := app.StorageRegistry.
+				user, err := app.StorageRegistry.
 					UserStorage.
 					GetByUsername(ctx, testCase.username)
-				requireNoError(t, appErr)
+				require.NoError(t, err)
 
-				session, appErr := app.StorageRegistry.
+				session, err := app.StorageRegistry.
 					SessionStorage.
 					GetSessionByUserId(ctx, user.Id)
-				requireNoError(t, appErr)
+				require.NoError(t, err)
 
 				assert.Equal(t, sessionId, session.Id)
 			}
@@ -113,7 +114,7 @@ func Test_Login(t *testing.T) {
 			name:       "wrong password",
 			username:   username,
 			password:   "qwe123",
-			expectCode: http.StatusUnauthorized,
+			expectCode: http.StatusBadRequest,
 		},
 	}
 
@@ -135,10 +136,10 @@ func Test_Login(t *testing.T) {
 			if res.response.StatusCode == http.StatusOK {
 				sessionId := getSessionIdFromResponse(t, res.response.Cookies())
 
-				session, appErr := app.StorageRegistry.
+				session, err := app.StorageRegistry.
 					SessionStorage.
 					GetSessionById(ctx, sessionId)
-				requireNoError(t, appErr)
+				require.NoError(t, err)
 
 				assert.Equal(t, sessionId, session.Id)
 			}

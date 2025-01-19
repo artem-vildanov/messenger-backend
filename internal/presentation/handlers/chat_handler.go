@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"log"
 	"messenger/internal/domain/models"
 	"messenger/internal/domain/services"
 	appErrors "messenger/internal/infrastructure/errors"
@@ -119,13 +118,10 @@ func (h *ChatHandler) ReadChatMessage(
 	wsContext *ws_utils.WsContext,
 ) error {
 	// blocking operation
-
-	log.Println("started listening messages from client")
 	createdMessage, err := ws_utils.Read[*dto.CreateMessageRequest](wsContext.Conn)
 	if err != nil {
 		return err
 	}
-	log.Println("got message from client: ", createdMessage.Text)
 
 	if err := h.chatService.PublishMessage(
 		wsContext.WsCtx,

@@ -45,7 +45,11 @@ build-debug:
 		-o ./bin/service ./cmd/service/main.go 
 
 int-tests-ci:
-	docker-compose \
+	make int-tests
+	make int-tests-cleanup
+
+int-tests:
+	docker compose \
 		-f ./deployment/docker-compose.test.yml \
 		-p messenger-app \
 		up -d
@@ -54,26 +58,19 @@ int-tests-ci:
 		-w /app \
 		messenger-app-messenger-service-test-1 \
 		./bin/tests -test.v
-	docker-compose \
-		-f ./deployment/docker-compose.test.yml \
-		down -v
 
-int-tests:
-	docker-compose \
+int-tests-cleanup:
+	docker compose \
 		-f ./deployment/docker-compose.test.yml \
 		-p messenger-app \
-		up -d
-#	$(call RUN_MIGRATOR,messenger-app_messenger-network-test,test)
-	docker exec \
-		-w /app \
-		messenger-app-messenger-service-test-1 \
-		./bin/tests -test.v
-
+		down -v
+	docker rm -f messenger-app-messenger-service-test-1
+	docker image rm -f messenger-app-messenger-service-test
 
 rerun-int-tests:
 	docker rm -f messenger-app-messenger-service-test-1
 	docker image rm -f messenger-app-messenger-service-test
-	docker-compose -f ./deployment/docker-compose.test.yml \
+	docker compose -f ./deployment/docker-compose.test.yml \
 		-p messenger-app \
 		up messenger-service-test -d
 	docker exec \
@@ -84,7 +81,7 @@ rerun-int-tests:
 run-concrete-int-test:
 	docker rm -f messenger-app-messenger-service-test-1
 	docker image rm -f messenger-app-messenger-service-test
-	docker-compose -f ./deployment/docker-compose.test.yml \
+	docker compose -f ./deployment/docker-compose.test.yml \
 		-p messenger-app \
 		up messenger-service-test -d
 	docker exec \

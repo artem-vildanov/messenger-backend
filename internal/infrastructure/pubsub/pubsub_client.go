@@ -69,7 +69,7 @@ func (p *PubsubClient) PublishMessage(
 		return appErrors.Wrap(
 			appErrors.ErrInternal,
 			err,
-			errors.New("PublishMessage"),
+			errors.New("PublishMessage to chat"),
 		)
 	}
 
@@ -90,7 +90,7 @@ func (p *PubsubClient) PublishMessage(
 		return appErrors.Wrap(
 			appErrors.ErrInternal,
 			err,
-			errors.New("PublishMessage"),
+			errors.New("PublishMessage as notification"),
 		)
 	}
 

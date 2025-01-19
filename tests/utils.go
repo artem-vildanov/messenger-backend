@@ -9,7 +9,6 @@ import (
 	"log"
 	"messenger/internal/bootstrap"
 	"messenger/internal/domain/models"
-	appErrors "messenger/internal/infrastructure/errors"
 	"net/http"
 	"reflect"
 	"sync"
@@ -218,7 +217,7 @@ func createUser(
 			context.Background(),
 			response.body.UserId,
 		)
-	requireNoError(t, err)
+	require.NoError(t, err)
 
 	return &UserData{
 		UserModel: userModel,
@@ -244,18 +243,9 @@ func createMessage(
 		model,
 		createdAt,
 	)
-	requireNoError(t, err)
+	require.NoError(t, err)
 
 	return
-}
-
-func requireNoError(t *testing.T, err *appErrors.Error) {
-	if err == nil {
-		return
-	}
-
-	t.Errorf("unexpected error: %s", err.Error())
-	t.FailNow()
 }
 
 func getSessionIdFromResponse(t *testing.T, cookies []*http.Cookie) string {
@@ -300,6 +290,17 @@ func resetTestDb() error {
 
 	log.Println("test db successfully reseted")
 	return nil
+}
+
+func closeWsConn(conn *websocket.Conn) {
+	err := conn.WriteMessage(
+		websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, "bye"),
+	)
+	if err != nil {
+		log.Printf("failed to close connection: %s", err)
+	}
+	conn.Close()
 }
 
 var (

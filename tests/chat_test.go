@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"messenger/internal/domain/models"
+	appErrors "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/utils/ws_utils"
 	"messenger/internal/presentation/dto"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -392,7 +392,10 @@ func Test_WS(t *testing.T) {
 			),
 			firstUserData.SessionId,
 		)
-		defer conn.Close()
+		defer func() {
+			closeWsConn(conn)
+			log.Println("first exited")
+		}()
 
 		time.Sleep(time.Second)
 
@@ -451,7 +454,10 @@ func Test_WS(t *testing.T) {
 			),
 			secondUserData.SessionId,
 		)
-		defer conn.Close()
+		defer func() {
+			log.Println("second exited")
+			closeWsConn(conn)
+		}()
 
 		time.Sleep(time.Second)
 		time.Sleep(time.Second)
@@ -471,19 +477,18 @@ func Test_WS(t *testing.T) {
 		assert.Equal(t, msgFromFirstToSec2, msg2.Text)
 
 		ws_utils.Write(conn, &dto.CreateMessageRequest{
-			SenderId:   firstUserData.UserModel.Id,
-			ReceiverId: secondUserData.UserModel.Id,
+			SenderId:   secondUserData.UserModel.Id,
+			ReceiverId: firstUserData.UserModel.Id,
 			Text:       msgFromSecToFirst1,
 		})
 
 		ws_utils.Write(conn, &dto.CreateMessageRequest{
-			SenderId:   firstUserData.UserModel.Id,
-			ReceiverId: secondUserData.UserModel.Id,
+			SenderId:   secondUserData.UserModel.Id,
+			ReceiverId: firstUserData.UserModel.Id,
 			Text:       msgFromSecToFirst2,
 		})
 
 		log.Println("second wrote messages to first")
-
 		time.Sleep(time.Second)
 
 		return nil
@@ -499,7 +504,10 @@ func Test_WS(t *testing.T) {
 			),
 			thirdUserData.SessionId,
 		)
-		defer conn.Close()
+		defer func() {
+			closeWsConn(conn)
+			log.Println("third exited")
+		}()
 
 		time.Sleep(time.Second)
 		time.Sleep(time.Second)
@@ -509,21 +517,23 @@ func Test_WS(t *testing.T) {
 
 		msg, err := ws_utils.Read[*dto.CreateMessageRequest](conn)
 
-		if !os.IsTimeout(err.OriginalError) {
-			errMsg := "no error"
-			if err != nil {
-				errMsg = err.Error()
-			}
+		if err != nil {
+			unwrappedErr, _ := appErrors.Unwrap(err)
 
-			return fmt.Errorf(
-				`the third user should not have received the message;
-				got error - %s;
-				got message - %s`,
-				errMsg,
-				msg.Text,
-			)
+			if unwrappedErr.Error.ResponseMessage == 
+				appErrors.ErrTimeout.ResponseMessage {
+				return nil
+			} 
+
+			log.Printf("third got unexpected error: %v", err)
+			return err
 		}
-		return nil
+
+		return fmt.Errorf(
+			`the third user should not have received the message;
+			got message - %s`,
+			msg.Text,
+		)
 	})
 
 	if err := group.Wait(); err != nil {

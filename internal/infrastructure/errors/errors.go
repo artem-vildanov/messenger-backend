@@ -84,6 +84,8 @@ func (e Error) Error() string {
 }
 
 var (
+	WsConnClosed      = NewError(http.StatusOK, "client closed connection")
+	ErrTimeout        = NewError(http.StatusBadRequest, "timeout")
 	ErrBadRequest     = NewError(http.StatusBadRequest, "bad request")
 	ErrNotFound       = NewError(http.StatusNotFound, "not found")
 	ErrUnauthorized   = NewError(http.StatusUnauthorized, "unauthorized")
@@ -116,6 +118,16 @@ func IsUniqueViolationErr(err error) bool {
 
 func IsNoRowsErr(err error) bool {
 	return errors.Is(err, sql.ErrNoRows)
+}
+
+func IsConnClosedErr(err error) bool {
+	unwrapped, ok := Unwrap(err)
+	if !ok {
+		return false
+	}
+	return unwrapped.ResponseMessage == WsConnClosed.ResponseMessage &&
+		unwrapped.Code == WsConnClosed.Code
+	
 }
 
 func WrappedErrorIs(wrapped error, target error) bool {

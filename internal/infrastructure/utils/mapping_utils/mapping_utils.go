@@ -3,6 +3,7 @@ package mapping_utils
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	appErrors "messenger/internal/infrastructure/errors"
 	"net/http"
 
@@ -11,10 +12,11 @@ import (
 
 func ValidateRequestModel(model any) error {
 	validate := validator.New()
-	if validationError := validate.Struct(model); validationError != nil {
+	if err := validate.Struct(model); err != nil {
+		log.Println(err.Error())
 		return appErrors.Wrap(
 			appErrors.ErrBadRequestWithMessage("validation error"),
-			validationError,
+			err,
 			errors.New("ValidateRequestModel"),
 		)
 	}
