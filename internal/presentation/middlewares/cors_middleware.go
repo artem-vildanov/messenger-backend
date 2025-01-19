@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/config"
 	ctx "messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/infrastructure/utils/router_utils"
@@ -11,7 +10,7 @@ func NewCorsMiddleware(env *config.Env) router_utils.Middleware {
 	return func(
 		handlerContext *ctx.HandlerContext,
 		next router_utils.Handler,
-	) *errors.Error {
+	) error {
 		builder := handlerContext.Response().
 			WithHeader("Access-Control-Allow-Origin", env.Origin).
 			WithHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS").

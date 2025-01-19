@@ -2,9 +2,10 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"messenger/internal/domain/models"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/pubsub"
 	"messenger/internal/infrastructure/pubsub/dto"
 	"messenger/internal/infrastructure/utils/ws_utils"
@@ -22,7 +23,7 @@ type MessageSaver interface {
 		context.Context,
 		*models.CreateMessageModel,
 		time.Time,
-	) (int, *errors.Error)
+	) (int, error)
 }
 
 type PubsubClient interface {
@@ -38,7 +39,7 @@ type PubsubClient interface {
 		ctx context.Context,
 		messageModel *models.MessageModel,
 		chatId string,
-	) *errors.Error
+	) error
 }
 
 type ChatService struct {
@@ -61,12 +62,16 @@ func (s *ChatService) SubscribeMessages(
 	conn *websocket.Conn,
 	firstUserId,
 	secondUserId int,
-) *errors.Error {
-	pubsubDtos := s.pubsubClient.SubscribeMessages(ctx, s.createChatId(firstUserId, secondUserId))
+) error {
+	pubsubDtos := s.pubsubClient.SubscribeMessages(
+		ctx,
+		s.createChatId(firstUserId, secondUserId),
+	)
 	if err := sendPubsubDtos(conn, pubsubDtos); err != nil {
-		return err.WithField("firstUserId", firstUserId).
-			WithField("secondUserId", secondUserId).
-			WithLogMessage("failed while subscribed to messages")
+		return appErrors.Wrap(
+			err,
+			errors.New("SubscribeMessages"),
+		)
 	}
 	return nil
 }
@@ -75,11 +80,13 @@ func (s *ChatService) SubscribeMessageNotifications(
 	ctx context.Context,
 	conn *websocket.Conn,
 	userId int,
-) *errors.Error {
+) error {
 	pubsubDtos := s.pubsubClient.SubscribeMessageNotifications(ctx, userId)
 	if err := sendPubsubDtos(conn, pubsubDtos); err != nil {
-		return err.WithField("userId", userId).
-			WithLogMessage("failed while subscribed to message notifications")
+		return appErrors.Wrap(
+			err,
+			errors.New("SubscribeMessageNotifications"),
+		)
 	}
 	return nil
 }
@@ -87,12 +94,12 @@ func (s *ChatService) SubscribeMessageNotifications(
 func (s *ChatService) PublishMessage(
 	ctx context.Context,
 	createdMessage *models.CreateMessageModel,
-) *errors.Error {
+) error {
 	createdAt := time.Now().In(time.UTC)
 
 	messageId, err := s.messageSaver.SaveMessage(ctx, createdMessage, createdAt)
 	if err != nil {
-		return err.WithLogMessage(failedToPublishMessage)
+		return appErrors.Wrap(err, errors.New("PublishMessage"))
 	}
 
 	messageModel := models.NewMessageModel(
@@ -107,11 +114,11 @@ func (s *ChatService) PublishMessage(
 	)
 
 	if err := s.pubsubClient.PublishMessage(
-		ctx, 
-		messageModel, 
+		ctx,
+		messageModel,
 		chatId,
 	); err != nil {
-		return err.WithLogMessage(failedToPublishMessage)
+		return appErrors.Wrap(err, errors.New("PublishMessage"))
 	}
 
 	return nil
@@ -128,7 +135,7 @@ func (s *ChatService) createChatId(firstUserId, secondUserId int) string {
 func sendPubsubDtos[T any](
 	conn *websocket.Conn,
 	pubsubDtosChannel <-chan *dto.PubsubDto[T],
-) *errors.Error {
+) error {
 	for pubsubDto := range pubsubDtosChannel {
 		if pubsubDto.Error != nil {
 			return pubsubDto.Error

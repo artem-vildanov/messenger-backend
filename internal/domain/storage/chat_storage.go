@@ -2,8 +2,9 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"messenger/internal/domain/models"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -21,10 +22,7 @@ func NewChatStorage(pg *sqlx.DB) *ChatStorage {
 func (r *ChatStorage) GetChatsByUserId(
 	ctx context.Context,
 	userId, limit, offset int,
-) (
-	[]*models.ChatModel,
-	*errors.Error,
-) {
+) ([]*models.ChatModel, error) {
 	// $1 - userId
 	// $2 - limit
 	// $3 - offset
@@ -76,8 +74,9 @@ OFFSET $3;
 
 	chats, err := r.findSlice(ctx, sql, userId, limit, offset)
 	if err != nil {
-		return nil, err.WithField("userId", userId).
-			WithLogMessage("failed to find chats by userId")
+		return nil, appErrors.Wrap(
+			err, errors.New("GetChatsByUserId"),
+		)
 	}
 
 	return chats, nil

@@ -16,19 +16,19 @@ func BuildApiGroup(app *bootstrap.App) *router_utils.RoutesGroup {
 		WithGroups(
 			router_utils.NewGroup("/auth").
 				WithRoutes(
-					router_utils.Route(router_utils.Post, "/login", authHandler.Login),
-					router_utils.Route(router_utils.Post, "/register", authHandler.Register),
-					router_utils.Route(router_utils.Post, "/logout", authHandler.Logout).Middleware(authMiddleware),
+					router_utils.NewRoute(router_utils.Post, "/login", authHandler.Login),
+					router_utils.NewRoute(router_utils.Post, "/register", authHandler.Register),
+					router_utils.NewRoute(router_utils.Post, "/logout", authHandler.Logout).Middleware(authMiddleware),
 				),
 			router_utils.NewGroup("/users").
 				WithMiddlewares(authMiddleware).
 				WithRoutes(
-					router_utils.Route(
+					router_utils.NewRoute(
 						router_utils.Get,
 						"/{userId:[0-9]+}",
 						userHandler.GetUserById,
 					),
-					router_utils.Route(
+					router_utils.NewRoute(
 						router_utils.Get,
 						"/all",
 						userHandler.GetAllUsers,
@@ -37,12 +37,12 @@ func BuildApiGroup(app *bootstrap.App) *router_utils.RoutesGroup {
 			router_utils.NewGroup("/chats").
 				WithMiddlewares(authMiddleware).
 				WithRoutes(
-					router_utils.Route(
+					router_utils.NewRoute(
 						router_utils.Get,
 						"",
 						chatHandler.GetMyChats,
 					),
-					router_utils.Route(
+					router_utils.NewRoute(
 						router_utils.Get,
 						"/{userId:[0-9]+}",
 						chatHandler.GetChatMessages,

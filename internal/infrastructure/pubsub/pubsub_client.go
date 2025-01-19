@@ -2,8 +2,9 @@ package pubsub
 
 import (
 	"context"
+	"errors"
 	"messenger/internal/domain/models"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/pubsub/dto"
 	"messenger/internal/infrastructure/utils/mapping_utils"
 	"strconv"
@@ -45,7 +46,7 @@ func (p *PubsubClient) PublishMessage(
 	ctx context.Context,
 	messageModel *models.MessageModel,
 	chatId string,
-) *errors.Error {
+) error {
 	messageDto := dto.NewMessageDto(messageModel)
 
 	// chat channel - chatId
@@ -56,22 +57,20 @@ func (p *PubsubClient) PublishMessage(
 
 	messageSerialized, err := mapping_utils.ToJsonString(messageDto)
 	if err != nil {
-		return err.WithField("MessageModel", messageModel)
+		return appErrors.Wrap(err, errors.New("PublishMessage"))
 	}
 
-	subsAmount, redisErr := p.client.Publish(
+	subsAmount, err := p.client.Publish(
 		ctx,
 		chatId,
 		messageSerialized,
 	).Result()
-
-	if redisErr != nil {
-		return errors.InternalError().
-			WithLogMessage(
-				redisErr.Error(),
-				"failed to publish message to redis pubsub",
-			).
-			WithField("MessageDto", messageDto)
+	if err != nil {
+		return appErrors.Wrap(
+			appErrors.ErrInternal,
+			err,
+			errors.New("PublishMessage"),
+		)
 	}
 
 	// if someone got message from redis channel
@@ -88,12 +87,11 @@ func (p *PubsubClient) PublishMessage(
 		strconv.Itoa(messageDto.ReceiverId),
 		messageSerialized,
 	).Err(); err != nil {
-		return errors.InternalError().
-			WithLogMessage(
-				err.Error(),
-				"failed to publish message notification to redis pubsub",
-			).
-			WithField("MessageDto", messageDto)
+		return appErrors.Wrap(
+			appErrors.ErrInternal,
+			err,
+			errors.New("PublishMessage"),
+		)
 	}
 
 	return nil
@@ -113,12 +111,11 @@ func subscribePubsub[T any](
 	for redisMsg := range readChannel.Channel() {
 		messageDto, err := mapping_utils.FromJsonString[T](redisMsg.Payload)
 		if err != nil {
-			writeChannel<-dto.NewPubsubError[T](
-				err.WithLogMessage("failed to parse from json string").
-					WithField("redis message payload", redisMsg),
-				)
+			writeChannel <- dto.NewPubsubError[T](
+				appErrors.Wrap(err, errors.New("subscribePubsub")),
+			)
 			return
 		}
-		writeChannel<-dto.NewPubsubDto(messageDto)
+		writeChannel <- dto.NewPubsubDto(messageDto)
 	}
 }

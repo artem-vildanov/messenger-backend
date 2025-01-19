@@ -1,17 +1,16 @@
 package router_utils
 
 import (
-	"messenger/internal/infrastructure/errors"
-	ctx "messenger/internal/infrastructure/utils/handler_utils"
+	"messenger/internal/infrastructure/utils/handler_utils"
 
 	"github.com/gorilla/mux"
 )
 
-type Middleware func(*ctx.HandlerContext, Handler) *errors.Error
+type Middleware func(*handler_utils.HandlerContext, Handler) error
 
 type RoutesGroup struct {
 	prefix       string
-	routes       []*route
+	routes       []*Route
 	routesGroups []*RoutesGroup
 	middlewares  []Middleware
 }
@@ -23,13 +22,13 @@ func RootGroup() *RoutesGroup {
 func NewGroup(prefix string) *RoutesGroup {
 	return &RoutesGroup{
 		prefix,
-		make([]*route, 0),
+		make([]*Route, 0),
 		make([]*RoutesGroup, 0),
 		make([]Middleware, 0),
 	}
 }
 
-func (b *RoutesGroup) WithRoutes(routes ...*route) *RoutesGroup {
+func (b *RoutesGroup) WithRoutes(routes ...*Route) *RoutesGroup {
 	b.routes = append(b.routes, routes...)
 	return b
 }

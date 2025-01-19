@@ -1,14 +1,13 @@
 package router_utils
 
 import (
-	"messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/utils/handler_utils"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-type Handler = func(*handler_utils.HandlerContext) *errors.Error
+type Handler = func(*handler_utils.HandlerContext) error
 
 func toHttpHandler(handler Handler) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
@@ -25,24 +24,24 @@ func toHttpHandler(handler Handler) http.Handler {
 	})
 }
 
-type route struct {
+type Route struct {
 	method  Method
 	path    string
 	handler Handler
 }
 
-func Route(method Method, path string, handler Handler) *route {
-	return &route{
+func NewRoute(method Method, path string, handler Handler) *Route {
+	return &Route{
 		method,
 		path,
 		handler,
 	}
 }
 
-func (r *route) Middleware(middlewares ...Middleware) *route {
+func (r *Route) Middleware(middlewares ...Middleware) *Route {
 	for _, middleware := range middlewares {
 		next := r.handler
-		r.handler = Handler(func(handlerContext *handler_utils.HandlerContext) *errors.Error {
+		r.handler = Handler(func(handlerContext *handler_utils.HandlerContext) error {
 			return middleware(handlerContext, next)
 		})
 	}

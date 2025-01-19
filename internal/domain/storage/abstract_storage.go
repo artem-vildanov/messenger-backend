@@ -4,11 +4,8 @@ import (
 	"context"
 	"database/sql"
 	appErrors "messenger/internal/infrastructure/errors"
-
 	"errors"
-
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 )
 
 // T is type of model with `db:"..."` tags on fields
@@ -37,14 +34,21 @@ func (r *AbstractStorage[T]) findOne(
 	ctx context.Context, 
 	query string, 
 	args ...any,
-) (*T, *appErrors.Error) {
+) (*T, error) {
 	model := new(T)
 	
 	if err := r.postgres.GetContext(ctx, model, query, args...); err != nil {
-		if r.isNoRows(err) {
-			return model, appErrors.NotFoundError()
+		if appErrors.IsNoRowsErr(err) {
+			return model, appErrors.Wrap(
+				appErrors.ErrNotFound,
+				errors.New("findOne"),
+			)
 		}
-		return model, appErrors.InternalError().WithLogMessage(err.Error())
+		return model, appErrors.Wrap(
+			appErrors.ErrInternal, 
+			err,
+			errors.New("findOne"),
+		)
 	}
 	return model, nil
 }
@@ -53,22 +57,20 @@ func (r *AbstractStorage[T]) findSlice(
 	ctx context.Context,
 	sql string,
 	args ...any,
-) ([]*T, *appErrors.Error) {
+) ([]*T, error) {
 	models := make([]*T, 0)
-	if err := r.postgres.SelectContext(ctx, &models, sql, args...); err != nil {
-		return models, appErrors.InternalError().WithLogMessage(err.Error())
+	if err := r.postgres.SelectContext(
+		ctx, 
+		&models, 
+		sql, 
+		args...,
+	); err != nil {
+		return models, appErrors.Wrap(
+			appErrors.ErrInternal,
+			err,
+			errors.New("findSlice"),
+		)
 	}
 	return models, nil
 }
 
-func (r *AbstractStorage[T]) isUniqueViolation(err error) bool {
-	var pgErr *pq.Error
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
-	}
-	return false
-}
-
-func (r *AbstractStorage[T]) isNoRows(err error) bool {
-	return errors.Is(err, sql.ErrNoRows)
-}

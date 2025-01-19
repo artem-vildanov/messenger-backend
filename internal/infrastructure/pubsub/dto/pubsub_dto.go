@@ -1,10 +1,8 @@
 package dto
 
-import "messenger/internal/infrastructure/errors"
-
 type PubsubDto[T any] struct {
 	Payload T
-	Error   *errors.Error
+	Error   error
 }
 
 func NewPubsubDto[T any](dto T) *PubsubDto[T] {
@@ -14,7 +12,7 @@ func NewPubsubDto[T any](dto T) *PubsubDto[T] {
 	}
 }
 
-func NewPubsubError[T any](err *errors.Error) *PubsubDto[T] {
+func NewPubsubError[T any](err error) *PubsubDto[T] {
 	return &PubsubDto[T]{
 		Payload: *new(T),
 		Error:   err,

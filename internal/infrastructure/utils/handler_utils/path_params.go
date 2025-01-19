@@ -1,44 +1,58 @@
 package handler_utils
 
 import (
+	"errors"
 	"fmt"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	"strconv"
 )
 
-func paramNotProvided(name string) errors.ResponseMessage {
-	return errors.ResponseMessage(
+func paramNotProvided(name string) appErrors.ResponseMessage {
+	return appErrors.ResponseMessage(
 		fmt.Sprintf("required param [%s] not provided", name),
 	)
 }
 
-func failedToCastToInt(value any) errors.ResponseMessage {
-	return errors.ResponseMessage(
+func failedToCastToInt(value any) appErrors.ResponseMessage {
+	return appErrors.ResponseMessage(
 		fmt.Sprintf("failed to cast to int [%v]", value),
 	)
 }
 
 type PathParams map[string]string
 
-func (pathParams PathParams) GetString(key string) (string, *errors.Error) {
+func (pathParams PathParams) GetString(key string) (string, error) {
 	value, ok := pathParams[key]
 	if !ok {
-		return "", errors.NotFoundError().
-			WithResponseMessage(paramNotProvided(key))
+		return "", appErrors.Wrap(
+			requiredParamNotProvided(key),
+			errors.New("GetString"),
+		)
 	}
 	return value, nil
 }
 
-func (pathParams PathParams) GetInteger(key string) (int, *errors.Error) {
+func (pathParams PathParams) GetInteger(key string) (int, error) {
 	strValue := pathParams[key]
 	if len(strValue) == 0 {
-		return 0, errors.NotFoundError().
-			WithResponseMessage(paramNotProvided(key))
+		return 0, appErrors.Wrap(
+			requiredParamNotProvided(key),
+			errors.New("GetInteger"),
+		)
 	}
 	intValue, err := strconv.Atoi(strValue)
 	if err != nil {
-		return 0, errors.InternalError().
-			WithLogMessage(string(failedToCastToInt(strValue)))
+		return 0, appErrors.Wrap(
+			appErrors.ErrInternal,
+			err,
+			errors.New("GetInteger"),
+		)
 	}
 	return intValue, nil
+}
+
+func requiredParamNotProvided(param string) error {
+	return appErrors.ErrBadRequestWithMessage(
+		fmt.Sprintf("required path param not provided: %s", param),
+	)
 }

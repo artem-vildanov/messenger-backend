@@ -2,9 +2,10 @@ package services
 
 import (
 	"context"
+	"errors"
 	"messenger/internal/domain/models"
 	"messenger/internal/infrastructure/config"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,14 +16,17 @@ type SessionStorage interface {
 	GetSessionById(
 		requestContext context.Context,
 		sessionId string,
-	) (*models.SessionModel, *errors.Error)
-	DeleteSession(ctx context.Context, sessionId string) *errors.Error
-	SaveSession(ctx context.Context, session *models.SessionModel) *errors.Error
+	) (*models.SessionModel, error)
+	DeleteSession(ctx context.Context, sessionId string) error
+	SaveSession(ctx context.Context, session *models.SessionModel) error
 }
 
 type UserStorage interface {
-	Create(ctx context.Context, userReqModel *models.AuthModel) (int, *errors.Error)
-	GetByUsername(ctx context.Context, username string) (*models.UserModel, *errors.Error)
+	Create(ctx context.Context, userReqModel *models.AuthModel) (int, error)
+	GetByUsername(
+		ctx context.Context,
+		username string,
+	) (*models.UserModel, error)
 }
 
 type SessionService struct {
@@ -46,75 +50,85 @@ func NewSessionService(
 func (s *SessionService) AuthenticateBySessionId(
 	ctx context.Context,
 	sessionId string,
-) (*models.SessionModel, *errors.Error) {
+) (*models.SessionModel, error) {
 	session, err := s.sessionStorage.GetSessionById(ctx, sessionId)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.Wrap(
+			err,
+			errors.New("AuthenticateBySessionId"),
+		)
 	}
 
 	if session.ExpiresAt.Before(time.Now()) {
 		if err := s.sessionStorage.DeleteSession(ctx, session.Id); err != nil {
-			return nil, err.WithField("Session", session)
+			return nil, appErrors.Wrap(
+				err,
+				errors.New("AuthenticateBySessionId"),
+			)
 		}
 
-		return nil, errors.UnauthorizedError().
-			WithResponseMessage("session expired").
-			WithField("Session", session)
+		return nil, appErrors.Wrap(
+			appErrors.ErrSessionExpired,
+			errors.New("AuthenticateBySessionId"),
+		)
 	}
 
 	return session, nil
 }
 
-// returns sessionId
 func (s *SessionService) Signup(
 	ctx context.Context,
 	signupModel *models.AuthModel,
-) (*models.SessionModel, *errors.Error) {
-	// hash password
-	hash, hashErr := bcrypt.GenerateFromPassword([]byte(signupModel.Password), bcrypt.DefaultCost)
-	if hashErr != nil {
-		return nil, errors.InternalError().
-			WithLogMessage(hashErr.Error(), "failed to hash password").
-			WithField("AuthRequest", signupModel)
+) (*models.SessionModel, error) {
+	hash, err := bcrypt.GenerateFromPassword(
+		[]byte(signupModel.Password),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		return nil, appErrors.Wrap(
+			appErrors.ErrInternal,
+			err,
+			errors.New("Signup"),
+		)
 	}
 	signupModel.Password = string(hash)
 
 	userId, err := s.userStorage.Create(ctx, signupModel)
 	if err != nil {
-		return nil, err.WithField("AuthRequest", signupModel)
+		return nil, appErrors.Wrap(err, errors.New("Signup"))
 	}
 
 	session := s.createSession(userId)
 	if err := s.sessionStorage.SaveSession(ctx, session); err != nil {
-		return nil, err.WithField("AuthRequest", signupModel)
+		return nil, appErrors.Wrap(err, errors.New("Signup"))
 	}
 
 	return session, nil
 }
 
-// returns sessionId
 func (s *SessionService) Authorize(
 	ctx context.Context,
 	loginModel *models.AuthModel,
-) (*models.SessionModel, *errors.Error) {
+) (*models.SessionModel, error) {
 	user, err := s.userStorage.GetByUsername(ctx, loginModel.Username)
 	if err != nil {
-		return nil, err.WithField("AuthRequest", loginModel)
+		return nil, appErrors.Wrap(err, errors.New("Authorize"))
 	}
 
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(user.PasswordHash),
 		[]byte(loginModel.Password),
 	); err != nil {
-		return nil, errors.UnauthorizedError().
-			WithResponseMessage("wrong password").
-			WithField("AuthRequest", loginModel).
-			WithLogMessage(err.Error())
+		return nil, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("wrong password"),
+			err,
+			errors.New("Authorize"),
+		)
 	}
 
 	session := s.createSession(user.Id)
 	if err := s.sessionStorage.SaveSession(ctx, session); err != nil {
-		return nil, err.WithField("AuthRequest", loginModel)
+		return nil, appErrors.Wrap(err, errors.New("Authorize"))
 	}
 
 	return session, nil

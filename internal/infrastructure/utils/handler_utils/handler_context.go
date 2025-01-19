@@ -1,8 +1,9 @@
 package handler_utils
 
 import (
+	"errors"
 	"log"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -35,54 +36,71 @@ type HandlerContext struct {
 }
 
 // returns limit, offset, error
-func (c *HandlerContext) GetLimitOffset() (int, int, *errors.Error) {
+func (c *HandlerContext) GetLimitOffset() (int, int, error) {
 	// get and validate limit
 	limitStr := c.QueryParams.Get("limit")
 	if len(limitStr) == 0 {
-		return 0, 0, errors.BadRequestError().
-			WithResponseMessage("limit query param not provided")
+		return 0, 0, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("limit request param not provided"),
+			errors.New("GetLimitOffset"),
+		)
 	}
 
 	limitInt, err := strconv.Atoi(limitStr)
 	if err != nil {
-		return 0, 0, errors.BadRequestError().
-			WithResponseMessage(failedToCastToInt(limitStr))
+		return 0, 0, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("invalid limit"),
+			errors.New("GetLimitOffset"),
+		)
 	}
 
 	if limitInt < minimalLimit {
-		return 0, 0, errors.BadRequestError().
-			WithResponseMessage(unexpectedLimitValue)
+		return 0, 0, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("invalid limit"),
+			errors.New("GetLimitOffset"),
+		)
 	}
 
 	// get and validate offset
 	offsetStr := c.QueryParams.Get("offset")
 	if len(offsetStr) == 0 {
-		return 0, 0, errors.BadRequestError().
-			WithResponseMessage(offsetNotProvided)
+		return 0, 0, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("offset request param not provided"),
+			errors.New("GetLimitOffset"),
+		)
 	}
 
 	offsetInt, err := strconv.Atoi(offsetStr)
 	if err != nil {
-		return 0, 0, errors.BadRequestError().
-			WithResponseMessage(failedToCastToInt(offsetStr))
+		return 0, 0, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("invalid offset"),
+			errors.New("GetLimitOffset"),
+		)
 	}
 
 	if offsetInt < minimalOffset {
-		return 0, 0, errors.BadRequestError().
-			WithResponseMessage(unexpectedOffsetValue)
+		return 0, 0, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("invalid offset"),
+			errors.New("GetLimitOffset"),
+		)
 	}
 
 	return limitInt, offsetInt, nil
 }
 
-func (c *HandlerContext) SessionCookie() (*http.Cookie, *errors.Error) {
+func (c *HandlerContext) SessionCookie() (*http.Cookie, error) {
 	cookie, err := c.Request.Cookie(SessionIdKey)
 	if err != nil {
 		if err == http.ErrNoCookie {
-			return nil, errors.UnauthorizedError()
+			return nil, appErrors.Wrap(
+				appErrors.ErrUnauthorized,
+				errors.New("GetSessionCookie"),
+			)
 		} else {
-			log.Printf("Failed to get cookie: %v\n", err)
-			return nil, errors.InternalError()
+			return nil, appErrors.Wrap(
+				appErrors.ErrInternal,
+				errors.New("GetSessionCookie"),
+			)
 		}
 	}
 	return cookie, nil
@@ -97,9 +115,14 @@ func (c *HandlerContext) Response() *ResponseBuilder {
 	}
 }
 
-func (c *HandlerContext) ErrorResponse(err *errors.Error) {
+func (c *HandlerContext) ErrorResponse(err error) {
+	unwrapped, ok := appErrors.Unwrap(err)
+	if !ok {
+		log.Printf("failed to unwrap error: %s", err.Error())
+	}
+	unwrapped.LogStdout()
 	c.Response().
-		WithCode(err.Code).
-		WithContent(err.Error()).
+		WithCode(unwrapped.Code).
+		WithContent(unwrapped.ResponseMessage).
 		Json()
 }

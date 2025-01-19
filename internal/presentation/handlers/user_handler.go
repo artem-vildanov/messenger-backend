@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"messenger/internal/domain/models"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	ctx "messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/presentation/dto"
 )
 
 type UserGetter interface {
-	GetById(ctx context.Context, id int) (*models.UserModel, *errors.Error)
-	GetAll(ctx context.Context) ([]*models.UserModel, *errors.Error)
+	GetById(ctx context.Context, id int) (*models.UserModel, error)
+	GetAll(ctx context.Context) ([]*models.UserModel, error)
 }
 
 type UserHandler struct {
@@ -21,10 +22,10 @@ func NewUserHandler(userRepo UserGetter) *UserHandler {
 	return &UserHandler{userRepo}
 }
 
-func (u *UserHandler) GetUserById(handlerContext *ctx.HandlerContext) *errors.Error {
+func (u *UserHandler) GetUserById(handlerContext *ctx.HandlerContext) error {
 	userId, err := handlerContext.PathParams.GetInteger("userId")
 	if err != nil {
-		return err
+		return appErrors.Wrap(err, errors.New("GetUserById"))
 	}
 
 	user, err := u.userRepo.GetById(
@@ -32,7 +33,7 @@ func (u *UserHandler) GetUserById(handlerContext *ctx.HandlerContext) *errors.Er
 		userId,
 	)
 	if err != nil {
-		return err
+		return appErrors.Wrap(err, errors.New("GetUserById"))
 	}
 
 	handlerContext.Response().
@@ -42,13 +43,13 @@ func (u *UserHandler) GetUserById(handlerContext *ctx.HandlerContext) *errors.Er
 	return nil
 }
 
-func (u *UserHandler) GetMyUser(handlerContext *ctx.HandlerContext) *errors.Error {
+func (u *UserHandler) GetMyUser(handlerContext *ctx.HandlerContext) error {
 	user, err := u.userRepo.GetById(
 		handlerContext.Request.Context(), 
 		handlerContext.AuthUserId,
 	)
 	if err != nil {
-		return err
+		return appErrors.Wrap(err, errors.New("GetMyUser"))
 	}
 
 	handlerContext.Response().
@@ -58,10 +59,10 @@ func (u *UserHandler) GetMyUser(handlerContext *ctx.HandlerContext) *errors.Erro
 	return nil
 }
 
-func (u *UserHandler) GetAllUsers(handlerContext *ctx.HandlerContext) *errors.Error {
+func (u *UserHandler) GetAllUsers(handlerContext *ctx.HandlerContext) error {
 	models, err := u.userRepo.GetAll(handlerContext.Request.Context())
 	if err != nil {
-		return err
+		return appErrors.Wrap(err, errors.New("GetAllUsers"))
 	}
 
 	handlerContext.Response().

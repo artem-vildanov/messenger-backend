@@ -2,33 +2,28 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"messenger/internal/domain/models"
 	"messenger/internal/infrastructure/config"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	ctx "messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/infrastructure/utils/mapping_utils"
 	"messenger/internal/presentation/dto"
-)
-
-const (
-	failedToReg    = "failed to register"
-	failedToLogin  = "failed to login"
-	failedToLogout = "failed to logout"
 )
 
 type SessionService interface {
 	Authorize(
 		ctx context.Context,
 		loginModel *models.AuthModel,
-	) (*models.SessionModel, *errors.Error)
+	) (*models.SessionModel, error)
 	Signup(
 		ctx context.Context,
 		signupModel *models.AuthModel,
-	) (*models.SessionModel, *errors.Error)
+	) (*models.SessionModel, error)
 }
 
 type SessionStorage interface {
-	DeleteSession(ctx context.Context, sessionId string) *errors.Error
+	DeleteSession(ctx context.Context, sessionId string) error
 }
 
 type AuthHandler struct {
@@ -47,12 +42,12 @@ func NewAuthHandler(
 	}
 }
 
-func (h *AuthHandler) Register(handlerContext *ctx.HandlerContext) *errors.Error {
+func (h *AuthHandler) Register(handlerContext *ctx.HandlerContext) error {
 	signupRequest, err := mapping_utils.FromRequest[*dto.AuthRequest](
 		handlerContext.Request,
 	)
 	if err != nil {
-		return err.WithLogMessage(failedToReg)
+		return appErrors.Wrap(err, errors.New("Register"))
 	}
 
 	session, err := h.sessionService.Signup(
@@ -60,7 +55,7 @@ func (h *AuthHandler) Register(handlerContext *ctx.HandlerContext) *errors.Error
 		signupRequest.ToDomain(),
 	)
 	if err != nil {
-		return err.WithLogMessage(failedToReg)
+		return appErrors.Wrap(err, errors.New("Register"))
 	}
 
 	handlerContext.Response().
@@ -73,12 +68,12 @@ func (h *AuthHandler) Register(handlerContext *ctx.HandlerContext) *errors.Error
 	return nil
 }
 
-func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
+func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) error {
 	loginModel, err := mapping_utils.FromRequest[*dto.AuthRequest](
 		handlerContext.Request,
 	)
 	if err != nil {
-		return err.WithLogMessage(failedToLogin)
+		return appErrors.Wrap(err, errors.New("Login"))
 	}
 
 	session, err := h.sessionService.Authorize(
@@ -86,7 +81,7 @@ func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
 		loginModel.ToDomain(),
 	)
 	if err != nil {
-		return err.WithLogMessage(failedToLogin)
+		return appErrors.Wrap(err, errors.New("Login"))
 	}
 
 	handlerContext.Response().
@@ -99,12 +94,12 @@ func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
 	return nil
 }
 
-func (h *AuthHandler) Logout(handlerContext *ctx.HandlerContext) *errors.Error {
+func (h *AuthHandler) Logout(handlerContext *ctx.HandlerContext) error {
 	if err := h.sessionDeleter.DeleteSession(
 		handlerContext.Request.Context(),
 		handlerContext.SessionId,
 	); err != nil {
-		return err.WithLogMessage(failedToLogout)
+		return appErrors.Wrap(err, errors.New("Logout"))
 	}
 
 	handlerContext.Response().Empty()

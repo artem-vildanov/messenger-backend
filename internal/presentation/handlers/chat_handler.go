@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"log"
 	"messenger/internal/domain/models"
 	"messenger/internal/domain/services"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/infrastructure/utils/ws_utils"
 	"messenger/internal/presentation/dto"
@@ -24,7 +25,7 @@ type ChatGetter interface {
 		userId,
 		limit,
 		offset int,
-	) ([]*models.ChatModel, *errors.Error)
+	) ([]*models.ChatModel, error)
 }
 
 type MessageStorage interface {
@@ -34,7 +35,7 @@ type MessageStorage interface {
 		secondUserId,
 		limit,
 		offset int,
-	) ([]*models.MessageModel, *errors.Error)
+	) ([]*models.MessageModel, error)
 }
 
 type ChatHandler struct {
@@ -57,10 +58,10 @@ func NewChatHandler(
 
 func (h *ChatHandler) GetMyChats(
 	handlerContext *handler_utils.HandlerContext,
-) *errors.Error {
+) error {
 	limit, offset, err := handlerContext.GetLimitOffset()
 	if err != nil {
-		return err.WithLogMessage(failedGetMyChats)
+		return appErrors.Wrap(err, errors.New("GetMyChats"))
 	}
 
 	chats, err := h.chatGetter.GetChatsByUserId(
@@ -70,7 +71,7 @@ func (h *ChatHandler) GetMyChats(
 		offset,
 	)
 	if err != nil {
-		return err.WithLogMessage(failedGetMyChats)
+		return appErrors.Wrap(err, errors.New("GetMyChats"))
 	}
 
 	handlerContext.Response().
@@ -82,15 +83,15 @@ func (h *ChatHandler) GetMyChats(
 
 func (h *ChatHandler) GetChatMessages(
 	handlerContext *handler_utils.HandlerContext,
-) *errors.Error {
+) error {
 	limit, offset, err := handlerContext.GetLimitOffset()
 	if err != nil {
-		return err.WithLogMessage(failedGetChatMessages)
+		return appErrors.Wrap(err, errors.New("GetChatMessages"))
 	}
 
 	secondUserId, err := handlerContext.PathParams.GetInteger("userId")
 	if err != nil {
-		return err.WithLogMessage(failedGetChatMessages)
+		return appErrors.Wrap(err, errors.New("GetChatMessages"))
 	}
 
 	firstUserId := handlerContext.AuthUserId
@@ -103,7 +104,7 @@ func (h *ChatHandler) GetChatMessages(
 		offset,
 	)
 	if err != nil {
-		return err.WithLogMessage(failedGetChatMessages)
+		return appErrors.Wrap(err, errors.New("GetChatMessages"))
 	}
 
 	handlerContext.Response().
@@ -116,7 +117,7 @@ func (h *ChatHandler) GetChatMessages(
 // reading from client his outgoing message
 func (h *ChatHandler) ReadChatMessage(
 	wsContext *ws_utils.WsContext,
-) *errors.Error {
+) error {
 	// blocking operation
 
 	log.Println("started listening messages from client")
@@ -130,7 +131,7 @@ func (h *ChatHandler) ReadChatMessage(
 		wsContext.WsCtx,
 		createdMessage.ToDomain(),
 	); err != nil {
-		return err.WithLogMessage("failed to process outgoing message")
+		return appErrors.Wrap(err, errors.New("ReadChatMessage"))
 	}
 
 	return nil
@@ -139,11 +140,11 @@ func (h *ChatHandler) ReadChatMessage(
 // writing to client his incoming messages
 func (h *ChatHandler) WriteChatMessages(
 	wsContext *ws_utils.WsContext,
-) *errors.Error {
+) error {
 	firstUserId := wsContext.HandlerContext.AuthUserId
 	secondUserId, err := wsContext.HandlerContext.PathParams.GetInteger("userId")
 	if err != nil {
-		return err.WithField("firstUserId", firstUserId)
+		return appErrors.Wrap(err, errors.New("WriteChatMessage"))
 	}
 
 	// blocking operation
@@ -153,7 +154,7 @@ func (h *ChatHandler) WriteChatMessages(
 		firstUserId,
 		secondUserId,
 	); err != nil {
-		return err.WithLogMessage("failed to process incoming messages")
+		return appErrors.Wrap(err, errors.New("WriteChatMessage"))
 	}
 
 	return nil
@@ -161,13 +162,13 @@ func (h *ChatHandler) WriteChatMessages(
 
 func (h *ChatHandler) WriteMessageNotifications(
 	wsContext *ws_utils.WsContext,
-) *errors.Error {
+) error {
 	if err := h.chatService.SubscribeMessageNotifications(
 		wsContext.WsCtx,
 		wsContext.Conn,
 		wsContext.HandlerContext.AuthUserId,
 	); err != nil {
-		return err.WithLogMessage("failed to write message notifications")
+		return appErrors.Wrap(err, errors.New("WriteMessageNotifications"))
 	}
 	
 	return nil

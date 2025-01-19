@@ -2,8 +2,9 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"messenger/internal/domain/models"
-	"messenger/internal/infrastructure/errors"
+	appErrors "messenger/internal/infrastructure/errors"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -24,7 +25,7 @@ func (r *MessageStorage) GetChatMessages(
 	firstUserId, secondUserId, limit, offset int,
 ) (
 	[]*models.MessageModel,
-	*errors.Error,
+	error,
 ) {
 	sql := `
 	select * from messages
@@ -35,17 +36,17 @@ func (r *MessageStorage) GetChatMessages(
 	`
 
 	messages, err := r.findSlice(
-		ctx, 
-		sql, 
-		firstUserId, 
-		secondUserId, 
-		limit, 
+		ctx,
+		sql,
+		firstUserId,
+		secondUserId,
+		limit,
 		offset,
 	)
 	if err != nil {
-		return nil, err.WithField("firstUserId", firstUserId).
-			WithField("secondUserId", secondUserId).
-			WithLogMessage("failed to MessageStorage.GetChatMessages")
+		return nil, appErrors.Wrap(
+			err, errors.New("GetChatMessages"),
+		)
 	}
 
 	return messages, nil
@@ -55,7 +56,7 @@ func (r *MessageStorage) SaveMessage(
 	ctx context.Context,
 	createMessageModel *models.CreateMessageModel,
 	createdAt time.Time,
-) (int, *errors.Error) {
+) (int, error) {
 	sql := `
 		insert into messages (sender_id, receiver_id, text, unread, created_at)
 		values ($1, $2, $3, $4, $5)
@@ -72,11 +73,11 @@ func (r *MessageStorage) SaveMessage(
 		true,
 		createdAt,
 	).Scan(&messageId); err != nil {
-		return 0, errors.InternalError().
-			WithLogMessage(err.Error()).
-			WithLogMessage("failed to save message").
-			WithField("CreateMessageRequest", createMessageModel).
-			WithField("createdAt", createdAt)
+		return 0, appErrors.Wrap(
+			appErrors.ErrInternal,
+			err,
+			errors.New("SaveMessage"),
+		)
 	}
 
 	return messageId, nil
@@ -85,7 +86,7 @@ func (r *MessageStorage) SaveMessage(
 func (r *MessageStorage) MakeMessageRead(
 	ctx context.Context,
 	messageId int,
-) *errors.Error {
+) error {
 	sql := `
 		update messages
 		set unread = false
@@ -93,10 +94,11 @@ func (r *MessageStorage) MakeMessageRead(
 	`
 
 	if err := r.exec(ctx, sql, messageId); err != nil {
-		return errors.InternalError().
-			WithLogMessage(err.Error()).
-			WithLogMessage("failed to make message read").
-			WithField("messageId", messageId)
+		return appErrors.Wrap(
+			appErrors.ErrInternal,
+			err,
+			errors.New("MakeMessageRead"),
+		)
 	}
 
 	return nil

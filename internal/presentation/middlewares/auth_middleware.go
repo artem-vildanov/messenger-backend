@@ -1,8 +1,9 @@
 package middlewares
 
 import (
-	"messenger/internal/infrastructure/errors"
+	"errors"
 	"messenger/internal/domain/services"
+	appErrors "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/infrastructure/utils/router_utils"
 )
@@ -13,10 +14,10 @@ func NewAuthMiddleware(sessionService *services.SessionService) router_utils.Mid
 	return func(
 		handlerContext *handler_utils.HandlerContext, 
 		next router_utils.Handler,
-	) *errors.Error {
+	) error {
 		sessionCookie, err := handlerContext.SessionCookie()
 		if err != nil {
-			return err.WithLogMessage(failedToAuth)
+			return appErrors.Wrap(err, errors.New("AuthMiddleware"))
 		}
 
 		session, err := sessionService.AuthenticateBySessionId(
@@ -25,7 +26,7 @@ func NewAuthMiddleware(sessionService *services.SessionService) router_utils.Mid
 		)
 
 		if err != nil {
-			return err.WithLogMessage(failedToAuth)
+			return appErrors.Wrap(err, errors.New("AuthMiddleware"))
 		}
 
 		handlerContext.AuthUserId = session.UserId

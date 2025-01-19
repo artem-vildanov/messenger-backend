@@ -2,7 +2,8 @@ package ws_utils
 
 import (
 	"context"
-	"messenger/internal/infrastructure/errors"
+	"errors"
+	appError "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/infrastructure/utils/router_utils"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 )
 
 func WsHandlers(handlers ...WsHandler) router_utils.Handler {
-	return func(handlerContext *handler_utils.HandlerContext) *errors.Error {
+	return func(handlerContext *handler_utils.HandlerContext) error {
 		if len(handlers) == 0 {
 			return nil
 		}
@@ -25,7 +26,7 @@ func WsHandlers(handlers ...WsHandler) router_utils.Handler {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		wsContext := NewWsContext(ctx, handlerContext, conn)
-		errorChannel := make(chan *errors.Error, 1)
+		errorChannel := make(chan error, 1)
 		wg := new(sync.WaitGroup)
 
 		for _, handler := range handlers {
@@ -52,7 +53,7 @@ func WsHandlers(handlers ...WsHandler) router_utils.Handler {
 	}
 }
 
-func NewWsConn(handlerContext *handler_utils.HandlerContext) (*websocket.Conn, *errors.Error) {
+func NewWsConn(handlerContext *handler_utils.HandlerContext) (*websocket.Conn, error) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true // todo add origin check
@@ -66,8 +67,11 @@ func NewWsConn(handlerContext *handler_utils.HandlerContext) (*websocket.Conn, *
 	)
 
 	if err != nil {
-		return nil, errors.InternalError().
-			WithLogMessage(err.Error(), "failed to upgrate connection")
+		return nil, appError.Wrap(
+			appError.ErrInternal,
+			err,
+			errors.New("NewWsConn"),
+		)
 	}
 
 	return conn, nil
@@ -77,7 +81,7 @@ func RunHandler(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	wg *sync.WaitGroup,
-	errorChannel chan *errors.Error,
+	errorChannel chan error,
 	wsContext *WsContext,
 	wsHandler WsHandler,
 ) {
