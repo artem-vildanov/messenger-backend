@@ -48,7 +48,9 @@ func NewAuthHandler(
 }
 
 func (h *AuthHandler) Register(handlerContext *ctx.HandlerContext) *errors.Error {
-	signupRequest, err := mapping_utils.FromRequest[*dto.AuthRequest](handlerContext.Request)
+	signupRequest, err := mapping_utils.FromRequest[*dto.AuthRequest](
+		handlerContext.Request,
+	)
 	if err != nil {
 		return err.WithLogMessage(failedToReg)
 	}
@@ -72,7 +74,9 @@ func (h *AuthHandler) Register(handlerContext *ctx.HandlerContext) *errors.Error
 }
 
 func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
-	loginModel, err := mapping_utils.FromRequest[*dto.AuthRequest](handlerContext.Request)
+	loginModel, err := mapping_utils.FromRequest[*dto.AuthRequest](
+		handlerContext.Request,
+	)
 	if err != nil {
 		return err.WithLogMessage(failedToLogin)
 	}
@@ -95,13 +99,8 @@ func (h *AuthHandler) Login(handlerContext *ctx.HandlerContext) *errors.Error {
 	return nil
 }
 
-
-
-
-
-
-func (a *AuthHandler) Logout(handlerContext *ctx.HandlerContext) *errors.Error {
-	if err := a.sessionDeleter.DeleteSession(
+func (h *AuthHandler) Logout(handlerContext *ctx.HandlerContext) *errors.Error {
+	if err := h.sessionDeleter.DeleteSession(
 		handlerContext.Request.Context(),
 		handlerContext.SessionId,
 	); err != nil {
