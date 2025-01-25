@@ -16,6 +16,7 @@ func BuildApiGroup(app *bootstrap.App) *router_utils.RoutesGroup {
 		WithGroups(
 			router_utils.NewGroup("/auth").
 				WithRoutes(
+					router_utils.NewRoute(router_utils.Get, "", userHandler.GetMyUser).Middleware(authMiddleware),
 					router_utils.NewRoute(router_utils.Post, "/login", authHandler.Login),
 					router_utils.NewRoute(router_utils.Post, "/register", authHandler.Register),
 					router_utils.NewRoute(router_utils.Post, "/logout", authHandler.Logout).Middleware(authMiddleware),

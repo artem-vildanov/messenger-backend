@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	failedWriteMessage = "failed to write chat message to client by ws"
+	failedWriteMessage      = "failed to write chat message to client by ws"
 	failedWriteNotification = "failed to write message notification to client by ws"
-	failedGetMyChats = "failed to get auth user chats"
-	failedGetChatMessages = "failed to get chat messages"
+	failedGetMyChats        = "failed to get auth user chats"
+	failedGetChatMessages   = "failed to get chat messages"
 )
 
 type ChatGetter interface {
@@ -38,9 +38,9 @@ type MessageStorage interface {
 }
 
 type ChatHandler struct {
-	chatGetter ChatGetter
+	chatGetter        ChatGetter
 	messageRepository MessageStorage
-	chatService    *services.ChatService
+	chatService       *services.ChatService
 }
 
 func NewChatHandler(
@@ -166,6 +166,6 @@ func (h *ChatHandler) WriteMessageNotifications(
 	); err != nil {
 		return appErrors.Wrap(err, errors.New("WriteMessageNotifications"))
 	}
-	
+
 	return nil
 }
