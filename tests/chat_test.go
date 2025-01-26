@@ -28,7 +28,7 @@ func Test_GetChatMessages(t *testing.T) {
 		firstUserData.UserModel.Id,
 		secondUserData.UserModel.Id,
 		fromFirstToSecText1,
-		time.Now().In(time.UTC),
+		time.Now().In(time.UTC).Add(time.Minute),
 	)
 
 	fromFirstToSecText2 := "msg from first to second 2"
@@ -37,7 +37,7 @@ func Test_GetChatMessages(t *testing.T) {
 		firstUserData.UserModel.Id,
 		secondUserData.UserModel.Id,
 		fromFirstToSecText2,
-		time.Now().In(time.UTC),
+		time.Now().In(time.UTC).Add(time.Minute*2),
 	)
 
 	fromFirstToThirdText1 := "msg from first to third 1"
@@ -46,7 +46,7 @@ func Test_GetChatMessages(t *testing.T) {
 		firstUserData.UserModel.Id,
 		thirdUserData.UserModel.Id,
 		fromFirstToThirdText1,
-		time.Now().In(time.UTC),
+		time.Now().In(time.UTC).Add(time.Minute*3),
 	)
 
 	fromFourthToFifthText1 := "msg from fourth to fifth 1"
@@ -55,7 +55,7 @@ func Test_GetChatMessages(t *testing.T) {
 		fourthUserData.UserModel.Id,
 		fifthUserData.UserModel.Id,
 		fromFourthToFifthText1,
-		time.Now().In(time.UTC),
+		time.Now().In(time.UTC).Add(time.Minute*4),
 	)
 
 	fromFourthToFifthText2 := "msg from fourth to fifth 2"
@@ -64,7 +64,7 @@ func Test_GetChatMessages(t *testing.T) {
 		fourthUserData.UserModel.Id,
 		fifthUserData.UserModel.Id,
 		fromFourthToFifthText2,
-		time.Now().In(time.UTC),
+		time.Now().In(time.UTC).Add(time.Minute*5),
 	)
 
 	fromFifthToFourthText1 := "msg from fifth to fourth 1"
@@ -73,7 +73,7 @@ func Test_GetChatMessages(t *testing.T) {
 		fifthUserData.UserModel.Id,
 		fourthUserData.UserModel.Id,
 		fromFifthToFourthText1,
-		time.Now().In(time.UTC),
+		time.Now().In(time.UTC).Add(time.Minute*6),
 	)
 
 	testCases := []struct {

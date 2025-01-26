@@ -5,6 +5,7 @@ import (
 	"errors"
 	"messenger/internal/domain/models"
 	appErrors "messenger/internal/infrastructure/errors"
+	"slices"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -31,9 +32,8 @@ func (r *MessageStorage) GetChatMessages(
 	select * from messages
 	where (sender_id = $1 and receiver_id = $2) 
 		or (sender_id = $2 and receiver_id = $1)
-	limit $3
-	offset $4
-	order by created_at desc;
+	order by created_at desc
+	limit $3 offset $4;
 	`
 
 	messages, err := r.findSlice(
@@ -50,6 +50,7 @@ func (r *MessageStorage) GetChatMessages(
 		)
 	}
 
+	slices.Reverse(messages)
 	return messages, nil
 }
 
