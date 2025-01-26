@@ -122,7 +122,7 @@ func (h *ChatHandler) ReadChatMessage(
 		wsContext.Conn,
 	)
 	if err != nil {
-		return err
+		return appErrors.Wrap(err, errors.New("ReadChatMessage"))
 	}
 
 	if err := h.chatService.PublishMessage(

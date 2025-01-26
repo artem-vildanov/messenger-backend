@@ -11,12 +11,24 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type MessageType string
+
+const (
+	message MessageType = "message"
+	ping    MessageType = "ping"
+)
+
 type WsHandler func(*WsContext) error
 
 type WsContext struct {
 	handler_utils.HandlerContext
 	Conn  *websocket.Conn
 	WsCtx context.Context // separate context for websockets
+}
+
+type WsMessage[T any] struct {
+	Type MessageType `json:"type"`
+	Dto  T           `json:"dto"`
 }
 
 func NewWsContext(
@@ -33,7 +45,7 @@ func NewWsContext(
 
 // blocking operation
 func Read[T any](conn *websocket.Conn) (T, error) {
-	var incoming T
+	var incoming WsMessage[T]
 
 	if err := conn.ReadJSON(&incoming); err != nil {
 		if websocket.IsCloseError(
@@ -41,36 +53,46 @@ func Read[T any](conn *websocket.Conn) (T, error) {
 			websocket.CloseNormalClosure,
 			websocket.CloseGoingAway,
 		) {
-			return incoming, appErrors.Wrap(
+			return incoming.Dto, appErrors.Wrap(
 				appErrors.WsConnClosed,
 				err,
 				errors.New("Read"),
 			)
 		}
 		if os.IsTimeout(err) {
-			return incoming, appErrors.Wrap(
+			return incoming.Dto, appErrors.Wrap(
 				appErrors.ErrTimeout,
 				err,
 				errors.New("Read"),
 			)
 		}
-		return incoming, appErrors.Wrap(
+		return incoming.Dto, appErrors.Wrap(
 			appErrors.ErrInternal,
 			err,
 			errors.New("Read"),
 		)
 	}
 
-	if err := mapping_utils.ValidateRequestModel(incoming); err != nil {
-		return incoming, err
+	if incoming.Type == ping {
+		if err := Write(conn, "Pong"); err != nil {
+			return incoming.Dto, appErrors.Wrap(err, errors.New("Read"))
+		}
+		return Read[T](conn)
 	}
 
-	return incoming, nil
+	if err := mapping_utils.ValidateRequestModel(incoming); err != nil {
+		return incoming.Dto, appErrors.Wrap(err, errors.New("Read"))
+	}
+
+	return incoming.Dto, nil
 }
 
 // blocking operation
 func Write(conn *websocket.Conn, outgoing any) error {
-	if err := conn.WriteJSON(outgoing); err != nil {
+	if err := conn.WriteJSON(WsMessage[any]{
+		Type: message,
+		Dto:  outgoing,
+	}); err != nil {
 		return appErrors.Wrap(
 			appErrors.ErrInternal,
 			err,

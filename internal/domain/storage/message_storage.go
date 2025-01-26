@@ -32,7 +32,8 @@ func (r *MessageStorage) GetChatMessages(
 	where (sender_id = $1 and receiver_id = $2) 
 		or (sender_id = $2 and receiver_id = $1)
 	limit $3
-	offset $4;
+	offset $4
+	order by created_at desc;
 	`
 
 	messages, err := r.findSlice(
