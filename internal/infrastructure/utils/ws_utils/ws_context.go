@@ -74,7 +74,10 @@ func Read[T any](conn *websocket.Conn) (T, error) {
 	}
 
 	if incoming.Type == ping {
-		if err := Write(conn, "pong"); err != nil {
+		if err := conn.WriteJSON(WsMessage[any]{
+			Type: ping,
+			Dto:  "pong",
+		}); err != nil {
 			return incoming.Dto, appErrors.Wrap(err, errors.New("Read"))
 		}
 		return Read[T](conn)
