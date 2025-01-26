@@ -28,7 +28,7 @@ type WsContext struct {
 
 type WsMessage[T any] struct {
 	Type MessageType `json:"type"`
-	Dto  T           `json:"dto"`
+	Dto  T           `json:"dto,omitempty"`
 }
 
 func NewWsContext(
