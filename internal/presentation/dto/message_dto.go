@@ -37,7 +37,7 @@ func NewMultipleMessagesResponse(messagesModels []*models.MessageModel) []*Messa
 type CreateMessageRequest struct {
 	SenderId   int    `json:"senderId" validate:"required,gt=0"`
 	ReceiverId int    `json:"receiverId" validate:"required,gt=0"`
-	Text       string `json:"text" validate:"required,min=3"`
+	Text       string `json:"text" validate:"required,min=0"`
 }
 
 func (r *CreateMessageRequest) ToDomain() *models.CreateMessageModel {

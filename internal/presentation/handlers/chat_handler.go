@@ -118,7 +118,9 @@ func (h *ChatHandler) ReadChatMessage(
 	wsContext *ws_utils.WsContext,
 ) error {
 	// blocking operation
-	createdMessage, err := ws_utils.Read[*dto.CreateMessageRequest](wsContext.Conn)
+	createdMessage, err := ws_utils.Read[*dto.CreateMessageRequest](
+		wsContext.Conn,
+	)
 	if err != nil {
 		return err
 	}
