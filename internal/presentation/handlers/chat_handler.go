@@ -35,6 +35,12 @@ type MessageStorage interface {
 		limit,
 		offset int,
 	) ([]*models.MessageModel, error)
+	GetChatMessagesAfterMessage(
+		ctx context.Context,
+		firstUserId,
+		secondUserId,
+		messageId int,
+	) ([]*models.MessageModel, error)
 }
 
 type ChatHandler struct {
@@ -75,6 +81,38 @@ func (h *ChatHandler) GetMyChats(
 
 	handlerContext.Response().
 		WithContent(dto.NewMultipleChatsResponse(chats)).
+		Json()
+
+	return nil
+}
+
+func (h *ChatHandler) GetMissedMessages(
+	handlerContext *handler_utils.HandlerContext,
+) error {
+	lastMessageId, err := handlerContext.PathParams.GetInteger("lastMessageId")
+	if err != nil {
+		return appErrors.Wrap(err, errors.New("GetMissedMessages"))
+	}
+
+	secondUserId, err := handlerContext.PathParams.GetInteger("userId")
+	if err != nil {
+		return appErrors.Wrap(err, errors.New("GetMissedMessages"))
+	}
+
+	firstUserId := handlerContext.AuthUserId
+
+	messages, err := h.messageRepository.GetChatMessagesAfterMessage(
+		handlerContext.Request.Context(),
+		firstUserId,
+		secondUserId,
+		lastMessageId,
+	)
+	if err != nil {
+		appErrors.Wrap(err, errors.New("GetMissedMessages"))
+	}
+
+	handlerContext.Response().
+		WithContent(dto.NewMultipleMessagesResponse(messages)).
 		Json()
 
 	return nil

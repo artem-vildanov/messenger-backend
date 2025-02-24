@@ -2,51 +2,40 @@ package routes
 
 import (
 	"messenger/internal/bootstrap"
-	"messenger/internal/infrastructure/utils/router_utils"
+	utils "messenger/internal/infrastructure/utils/router_utils"
 )
 
-func BuildApiGroup(app *bootstrap.App) *router_utils.RoutesGroup {
+func BuildApiGroup(app *bootstrap.App) *utils.RoutesGroup {
 	authMiddleware := app.MiddlewareRegistry.AuthMiddleware
 
 	authHandler := app.HandlerRegistry.AuthHandler
 	userHandler := app.HandlerRegistry.UserHandler
 	chatHandler := app.HandlerRegistry.ChatHandler
 
-	return router_utils.NewGroup("/api").
+	return utils.NewGroup("/api").
 		WithGroups(
-			router_utils.NewGroup("/auth").
+			utils.NewGroup("/auth").
 				WithRoutes(
-					router_utils.NewRoute(router_utils.Get, "", userHandler.GetMyUser).Middleware(authMiddleware),
-					router_utils.NewRoute(router_utils.Post, "/login", authHandler.Login),
-					router_utils.NewRoute(router_utils.Post, "/register", authHandler.Register),
-					router_utils.NewRoute(router_utils.Post, "/logout", authHandler.Logout).Middleware(authMiddleware),
+					utils.NewRoute(utils.Get, "", userHandler.GetMyUser).Middleware(authMiddleware),
+					utils.NewRoute(utils.Post, "/login", authHandler.Login),
+					utils.NewRoute(utils.Post, "/register", authHandler.Register),
+					utils.NewRoute(utils.Post, "/logout", authHandler.Logout).Middleware(authMiddleware),
 				),
-			router_utils.NewGroup("/users").
+			utils.NewGroup("/users").
 				WithMiddlewares(authMiddleware).
 				WithRoutes(
-					router_utils.NewRoute(
-						router_utils.Get,
-						"/{userId:[0-9]+}",
-						userHandler.GetUserById,
-					),
-					router_utils.NewRoute(
-						router_utils.Get,
-						"/all",
-						userHandler.GetAllUsers,
-					),
+					utils.NewRoute(utils.Get, "/{userId:[0-9]+}", userHandler.GetUserById),
+					utils.NewRoute(utils.Get, "/all", userHandler.GetAllUsers),
 				),
-			router_utils.NewGroup("/chats").
+			utils.NewGroup("/chats").
 				WithMiddlewares(authMiddleware).
 				WithRoutes(
-					router_utils.NewRoute(
-						router_utils.Get,
-						"",
-						chatHandler.GetMyChats,
-					),
-					router_utils.NewRoute(
-						router_utils.Get,
-						"/{userId:[0-9]+}",
-						chatHandler.GetChatMessages,
+					utils.NewRoute(utils.Get, "", chatHandler.GetMyChats),
+					utils.NewRoute(utils.Get, "/{userId:[0-9]+}", chatHandler.GetChatMessages),
+					utils.NewRoute(
+						utils.Get,
+						"/{userId:[0-9]+}/missed-messages/{lastMessageId:[0-9]+}",
+						chatHandler.GetMissedMessages,
 					),
 					// router.Route(router.Post, "/new-message", chatHandler.SendMessage),
 				),

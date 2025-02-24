@@ -3,7 +3,6 @@ package ws_utils
 import (
 	"context"
 	"errors"
-	"log"
 	appError "messenger/internal/infrastructure/errors"
 	"messenger/internal/infrastructure/utils/handler_utils"
 	"messenger/internal/infrastructure/utils/router_utils"
@@ -15,8 +14,6 @@ import (
 
 func WsHandlers(handlers ...WsHandler) router_utils.Handler {
 	return func(handlerContext *handler_utils.HandlerContext) error {
-		log.Printf("headers -> %v", handlerContext.Request.Header)
-
 		if len(handlers) == 0 {
 			return nil
 		}

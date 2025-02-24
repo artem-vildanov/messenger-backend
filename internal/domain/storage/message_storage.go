@@ -5,11 +5,12 @@ import (
 	"errors"
 	"messenger/internal/domain/models"
 	appErrors "messenger/internal/infrastructure/errors"
-	"slices"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
+
+const maxMissedMessages = 20
 
 type MessageStorage struct {
 	*AbstractStorage[models.MessageModel]
@@ -21,18 +22,55 @@ func NewMessageStorage(pg *sqlx.DB) *MessageStorage {
 	}
 }
 
-func (r *MessageStorage) GetChatMessages(
+func (r *MessageStorage) GetChatMessagesAfterMessage(
 	ctx context.Context,
-	firstUserId, secondUserId, limit, offset int,
-) (
-	[]*models.MessageModel,
-	error,
-) {
+	firstUserId,
+	secondUserId,
+	messageId int,
+) ([]*models.MessageModel, error) {
 	sql := `
 	select * from messages
 	where (sender_id = $1 and receiver_id = $2) 
 		or (sender_id = $2 and receiver_id = $1)
-	order by created_at desc
+		and id > $3
+	order by created_at asc
+	limit $4 + 1;
+	`
+
+	messages, err := r.findSlice(
+		ctx,
+		sql,
+		firstUserId,
+		secondUserId,
+		messageId,
+		maxMissedMessages,
+	)
+	if err != nil {
+		return nil, appErrors.Wrap(err, errors.New("GetChatMessagesAfterMessage"))
+	}
+
+	if len(messages) > maxMissedMessages {
+		return nil, appErrors.Wrap(
+			appErrors.ErrBadRequestWithMessage("too many missed messages"),
+			errors.New("GetChatMessagesAfterMessage"),
+		)
+	}
+
+	return messages, nil
+}
+
+func (r *MessageStorage) GetChatMessages(
+	ctx context.Context,
+	firstUserId,
+	secondUserId,
+	limit,
+	offset int,
+) ([]*models.MessageModel, error) {
+	sql := `
+	select * from messages
+	where (sender_id = $1 and receiver_id = $2) 
+		or (sender_id = $2 and receiver_id = $1)
+	order by created_at asc
 	limit $3 offset $4;
 	`
 
@@ -50,7 +88,6 @@ func (r *MessageStorage) GetChatMessages(
 		)
 	}
 
-	slices.Reverse(messages)
 	return messages, nil
 }
 

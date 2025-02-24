@@ -11,25 +11,26 @@ type CreateMessageModel struct {
 }
 
 type MessageModel struct {
-	Id         int       `json:"id" db:"id"`
-	Unread     bool      `json:"unread" db:"unread"`
-	SenderId   int       `json:"senderId" db:"sender_id"`
-	ReceiverId int       `json:"receiverId" db:"receiver_id"`
-	Text       string    `json:"text" db:"text"`
-	CreatedAt  time.Time `json:"createdAt" db:"created_at"`
+	Id               int       `db:"id"`
+	Unread           bool      `db:"unread"`
+	SenderId         int       `db:"sender_id"`
+	ReceiverId       int       `db:"receiver_id"`
+	Text             string    `db:"text"`
+	CreatedAt        time.Time `db:"created_at"`
 }
 
 func NewMessageModel(
-	id int, 
-	createdAt time.Time, 
+	id int,
+	createdAt time.Time,
 	createMessageModel *CreateMessageModel,
 ) *MessageModel {
 	return &MessageModel{
-		Id: id,
-		Unread: true,
-		SenderId: createMessageModel.SenderId,
+		Id:         id,
+		Unread:     true,
+		SenderId:   createMessageModel.SenderId,
 		ReceiverId: createMessageModel.ReceiverId,
-		Text: createMessageModel.Text,
-		CreatedAt: createdAt,
+		Text:       createMessageModel.Text,
+		CreatedAt:  createdAt,
 	}
 }
+

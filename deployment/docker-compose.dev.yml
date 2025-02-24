@@ -1,55 +1,46 @@
 services:
-  messenger-gateway:
+  messenger-gateway-dev:
     image: nginx:alpine
     ports:
       - "80:80"
     volumes:
       - ../config/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
-      - messenger-service
+      - messenger-service-dev
     networks:
-      - messenger-network
+      - messenger-network-dev
     deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
       restart_policy:
         condition: on-failure
 
-  messenger-service:
+  messenger-service-dev:
     image: messenger-service:${IMAGE_TAG}
     deploy:
-      replicas: 3
       restart_policy:
         condition: on-failure
     networks:
       - messenger-network
 
-  messenger-redis:
+  messenger-redis-dev:
     image: redis:alpine
-    deploy:
-      replicas: 1
     networks:
-      - messenger-network
+      - messenger-network-dev
 
-  messenger-postgres:
+  messenger-postgres-dev:
     image: postgres:alpine
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: messenger
     volumes:
-      - messenger-postgres-data:/var/lib/postgresql/data
-    deploy:
-      replicas: 1
+      - messenger-postgres-data-dev:/var/lib/postgresql/data
     networks:
-      - messenger-network
+      - messenger-network-dev
 
 networks:
-  messenger-network:
-    driver: overlay
+  messenger-network-dev:
+    driver: bridge
     attachable: true
 
 volumes:
-  messenger-postgres-data:
+  messenger-postgres-data-dev:
